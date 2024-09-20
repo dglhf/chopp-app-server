@@ -20,8 +20,8 @@ $ npm run start:prod
 ## Docker
 
 ```bash
-# go to docker dir: [development] or [production]
-$ cd docker/development
+# cp docker files to app root / dir: [development] or [production]
+$ cp docker/development/* ./
 
 # build container with params
 $ docker-compose build
