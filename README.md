@@ -45,6 +45,19 @@ $ npm run start:dev
 $ npm run start:prod
 ```
 
+## Docker
+
+```bash
+# go to docker dir: [development] or [production]
+$ cd docker/development
+
+# build container with params
+$ docker-compose build
+
+# container image starting
+$ docker-compose up
+```
+
 ## API Docs
 
 Swagger: http://localhost:[env.PORT]/api/docs
