@@ -47,4 +47,4 @@ $ npm run start:prod
 
 ## API Docs
 
-[Swagger](localhost:[env.PORT]/api/docs).
+[Swagger](http://localhost:[env.PORT]/api/docs)
