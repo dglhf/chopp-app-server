@@ -11,26 +11,21 @@ export class AuthService {
         private usersService: UsersService,
         // поменять на passport js
         private jwtService: JwtService
-    ) {}
+    ) { }
 
-    private async generateToken(user: User) {
+    private async generateTokens(user: User) {
         const payload = { email: user.email, id: user.id, roles: user.roles };
 
         return {
-            /* 
-                todo: переделать на получение двух токенов через
-                accessToken: this.jwtService.sign(payload, {
-                    expiresIn: '',
-                    secret: '',
-                }),
-                refreshToken: this.jwtService.sign(payload, {
-                    expiresIn: '',
-                    secret: '',
-                }),
-                убрать параметры из JwtModule.register
-            */
-            token: this.jwtService.sign(payload),
-        } 
+            accessToken: this.jwtService.sign(payload, {
+                expiresIn: process.env.JWT_ACCESS_EXPIRATION,
+                secret: process.env.JWT_ACCESS_SECRET_HEX,
+            }),
+            refreshToken: this.jwtService.sign(payload, {
+                expiresIn: process.env.JWT_REFRESH_EXPIRATION,
+                secret: process.env.JWT_REFRESH_SECRET_HEX,
+            }),
+        }
     }
 
     private async sanitizeUser(userDto: CreateUserDto) {
@@ -50,7 +45,7 @@ export class AuthService {
 
     async login(userDto: CreateUserDto) {
         const user = await this.sanitizeUser(userDto);
-        return this.generateToken(user);
+        return this.generateTokens(user);
     }
 
     async registration(userDto: CreateUserDto) {
@@ -64,6 +59,6 @@ export class AuthService {
 
         const user = await this.usersService.createUser({ ...userDto, password: hashPassword });
 
-        return this.generateToken(user);
+        return this.generateTokens(user);
     }
 }
