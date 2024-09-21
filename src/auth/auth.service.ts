@@ -32,7 +32,7 @@ export class AuthService {
         const user = await this.usersService.getUserByEmail(userDto.email);
 
         if (!user) {
-            throw new UnauthorizedException({ message: 'Пользователь не найден' });
+            throw new UnauthorizedException({ message: 'User not found' });
         }
         const isPasswordsEquals = await bcrypt.compare(userDto.password, user.password);
 
@@ -40,7 +40,7 @@ export class AuthService {
             return user;
         }
 
-        throw new UnauthorizedException({ message: 'Неверный пароль' });
+        throw new UnauthorizedException({ message: 'Password is not correct' });
     }
 
     async login(userDto: CreateUserDto) {
@@ -52,7 +52,7 @@ export class AuthService {
         const candidate = await this.usersService.getUserByEmail(userDto.email);
 
         if (candidate) {
-            throw new HttpException('Пользователь с таким email уже существует', HttpStatus.BAD_REQUEST);
+            throw new HttpException('User with this email already exist', HttpStatus.BAD_REQUEST);
         }
 
         const hashPassword = await bcrypt.hash(userDto.password, 5);
