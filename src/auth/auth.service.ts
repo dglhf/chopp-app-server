@@ -1,9 +1,10 @@
 import { HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { CreateUserDto } from 'src/users/dto/create-user.dto';
+import { CreateUserDto, UserRO } from 'src/users/dto/create-user.dto';
 import { UsersService } from 'src/users/users.service';
 import * as bcrypt from 'bcryptjs';
 import { User } from 'src/users/users.model';
+import { AuthDto } from './dto/auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -28,13 +29,13 @@ export class AuthService {
         }
     }
 
-    private async sanitizeUser(userDto: CreateUserDto) {
-        const user = await this.usersService.getUserByEmail(userDto.email);
+    private async checkValidityUser(authDto: AuthDto) {
+        const user = await this.usersService.getUserByEmail(authDto.email);
 
         if (!user) {
             throw new UnauthorizedException({ message: 'User not found' });
         }
-        const isPasswordsEquals = await bcrypt.compare(userDto.password, user.password);
+        const isPasswordsEquals = await bcrypt.compare(authDto.password, user.password);
 
         if (user && isPasswordsEquals) {
             return user;
@@ -43,8 +44,8 @@ export class AuthService {
         throw new UnauthorizedException({ message: 'Password is not correct' });
     }
 
-    async login(userDto: CreateUserDto) {
-        const user = await this.sanitizeUser(userDto);
+    async login(authDto: AuthDto) {
+        const user = await this.checkValidityUser(authDto);
         return this.generateTokens(user);
     }
 
@@ -60,5 +61,43 @@ export class AuthService {
         const user = await this.usersService.createUser({ ...userDto, password: hashPassword });
 
         return this.generateTokens(user);
+    }
+
+    verifyToken(token: string, secret: string): UserRO {
+        try {
+            const payload = this.jwtService.verify(token, { secret });
+            return payload;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    async refresh(refreshToken: string) {
+        if (!refreshToken) {
+            throw new UnauthorizedException({ message: 'Refresh token not found' });
+        }
+
+        const payload = this.verifyToken(refreshToken, process.env.JWT_REFRESH_SECRET_HEX);
+
+        if (!payload) {
+            throw new UnauthorizedException({ message: 'Invalid refresh token' });
+        }
+
+        const user = await this.usersService.getUserById(payload.id);
+
+        if (!user) {
+            throw new UnauthorizedException({ message: 'Invalid user' });
+        }
+
+        return this.generateTokens(user);
+    }
+
+    async getUserByTokenPayload(accessToken: string): Promise<UserRO> {
+        try {
+            const payload = this.verifyToken(accessToken, process.env.JWT_ACCESS_SECRET_HEX);
+            return payload;
+        } catch (e) {
+            return null;
+        }
     }
 }
