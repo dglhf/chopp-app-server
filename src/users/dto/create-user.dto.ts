@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, Length, IsEmail } from 'class-validator';
+import { Role } from 'src/roles/roles.model';
 
 const PASSWORD_MINIMAL_LENGTH = 8;
 const PASSWORD_MAXIMUM_LENGTH = 16;
@@ -28,3 +29,13 @@ export class CreateUserDto {
     @Length(PHONE_NUMBER_MINIMAL_LENGTH, PHONE_NUMBER_MAXIMUM_LENGTH, { message: `Phone number must be from ${PHONE_NUMBER_MINIMAL_LENGTH} to ${PHONE_NUMBER_MAXIMUM_LENGTH} characters` })
     readonly phoneNumber: string;
 }
+
+export class UserRO {
+    id: number;
+    email: string;
+    fullName: string;
+    phoneNumber: string;
+    roles: Role[];
+}
+
+export class AdminRO {}
