@@ -13,6 +13,11 @@ import { ValidationPipe } from 'src/pipes/validation.pipe';
 export class UsersController {
     constructor(private usersService: UsersService) {}
 
+    /* 
+        TODO: нужно будет убрать метод создания пользователя без авторизации,
+        либо защитить role guard, только ADMIN
+    */
+
     @ApiOperation({ summary: 'User creation' })
     @ApiResponse({ status: 200, type: User })
     @UsePipes(ValidationPipe)
