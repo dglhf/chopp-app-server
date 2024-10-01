@@ -92,12 +92,14 @@ export class AuthService {
         return this.generateTokens(user);
     }
 
-    async getUserByTokenPayload(accessToken: string): Promise<UserRO> {
+    async getUserByTokenPayload(accessToken: string) {
         try {
             const payload = this.verifyToken(accessToken, process.env.JWT_ACCESS_SECRET_HEX);
-            return payload;
+            const user = await this.usersService.getUserById(payload.id);
+
+            return user;
         } catch (e) {
-            return null;
+            throw new HttpException('User not found', HttpStatus.BAD_REQUEST);
         }
     }
 }

@@ -41,16 +41,10 @@ export class UsersController {
     @ApiResponse({ status: 200, type: User })
     @UseGuards(JwtAuthGuard)
     @Get('/currentUser')
-    async currentUser(@Headers() headers) {
+    currentUser(@Headers() headers) {
         const authHeader = headers.authorization;
-
         const token = authHeader.split(' ')[1];
-
-        const user = await this.authService.getUserByTokenPayload(token);
-
-        if (!user?.id) {
-            throw new HttpException('User not found', HttpStatus.BAD_REQUEST);
-        }
+        const user = this.authService.getUserByTokenPayload(token);
 
         return user;
     }
