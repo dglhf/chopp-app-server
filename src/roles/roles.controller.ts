@@ -10,6 +10,11 @@ import { CreateRoleDto } from './dto/create-role.dto';
 export class RolesController {
     constructor(private rolesService: RolesService) {}
 
+    /* 
+        TODO: нужно будет ограничить доступ без токена
+        и проставить Role guard для запроса всем ролей
+    */
+
     @ApiOperation({ summary: 'Role creation' })
     @ApiResponse({ status: 200, type: Role })
     @Post()
