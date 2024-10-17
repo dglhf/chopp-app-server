@@ -16,7 +16,7 @@ export class UsersService {
     async createUser(dto: CreateUserDto) {
         const user = await this.userRepository.create(dto);
         const role = await this.roleService.getRoleByValue('USER');
-        // роль добавляется в базу позже и чтобы доп запрос из базы не делать:
+        // role creation after user is created
         user.roles = [role];
         await user.$set('roles', [role.id]);
 
@@ -35,7 +35,6 @@ export class UsersService {
         }
         if (payload?.password) {
             const hashPassword = await bcrypt.hash(payload.password, 5);
-
             userModel.update({ password: hashPassword });
         }
         if (payload?.fullName) {
@@ -54,6 +53,8 @@ export class UsersService {
         const where = search
             ? {
                 [Op.or]: [
+                    { fullName: { [Op.iLike]: `%${search}%` } },
+                    { email: { [Op.iLike]: `%${search}%` } },
                     { phoneNumber: { [Op.iLike]: `%${search}%` } },
                 ],
             }
@@ -84,14 +85,14 @@ export class UsersService {
             в том числе по ForeignKey в промежуточной базе данных
             в данном случае ролей
         */
-        const user = await this.userRepository.findOne({ where: { email }, include: { all: true } });
+        const user = await this.userRepository.findOne({ where: { email }, include: { all: true }, attributes: { exclude: ['password'] } });
 
         return user;
     }
 
     async getUserById(id: number) {
         try {
-            const user = await this.userRepository.findOne({ where: { id }, include: { all: true } });
+            const user = await this.userRepository.findOne({ where: { id }, include: { all: true }, attributes: { exclude: ['password'] } });
             return user;
         } catch (e) {
             return null;
