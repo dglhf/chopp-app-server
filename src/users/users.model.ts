@@ -3,6 +3,8 @@ import { BelongsToMany, Column, DataType, Model, Table } from 'sequelize-typescr
 import { Role } from '../roles/roles.model';
 import { UserRoles } from 'src/roles/user-roles.model';
 import { UserRO } from './dto/create-user.dto';
+import { UserChats } from 'src/chats/user-chats.model';
+import { Chat } from 'src/chats/chats.model';
 
 interface UserCreationAttrs {
     email: string;
@@ -35,6 +37,9 @@ export class User extends Model<User, UserCreationAttrs> {
 
     @BelongsToMany(() => Role, () => UserRoles)
     roles: Role[];
+
+    @BelongsToMany(() => Chat, () => UserChats)
+    chats: Chat[];
 
     sanitizeUser(): UserRO {
         const responseObject: UserRO = { ...this }
