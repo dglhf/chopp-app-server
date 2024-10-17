@@ -28,7 +28,7 @@ export class RolesGuard implements CanActivate {
             const [bearer, token] = authHeader.split(' ');
 
             if (bearer !== 'Bearer' || !token) {
-                throw new UnauthorizedException({ message: 'Пользователь не авторизован' });
+                throw new UnauthorizedException({ message: 'User is not authorized' });
             }
 
             const user = this.jwtService.verify(token);
@@ -37,7 +37,7 @@ export class RolesGuard implements CanActivate {
 
             return user.roles.some((role) => requiredRoles.includes(role.value));
         } catch (e) {
-            throw new HttpException('Нет доступа', HttpStatus.FORBIDDEN);
+            throw new HttpException('Access denied for this role', HttpStatus.FORBIDDEN);
         }
     }
 }
