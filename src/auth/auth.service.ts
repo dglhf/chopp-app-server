@@ -10,7 +10,7 @@ import { AuthDto } from './dto/auth.dto';
 export class AuthService {
     constructor(
         private usersService: UsersService,
-        // поменять на passport js
+        // chnage to passport js
         private jwtService: JwtService
     ) { }
 
