@@ -24,8 +24,9 @@ export class UsersService {
     }
 
     async updateUser(payload: CreateUserDto, userModel: User) {
+        // check if possible change to {...user, ...payload} spreading for conditions deleting
         if (payload?.email) {
-            const candidate = await this.getUserByEmail(payload?.email);
+            const candidate = await this.getUserByFieldName(payload?.email, 'email');
 
             if (candidate) {
                 throw new HttpException('User with this email already exist', HttpStatus.BAD_REQUEST);
@@ -79,23 +80,19 @@ export class UsersService {
         };
     }
 
-    async getUserByEmail(email: string) {
+    async getUserByFieldName(fieldValue: string | number, fieldName: string, withPassword: boolean = false) {
+        const where = {
+                [fieldName]: fieldValue,
+        }
+
         /* 
             include: { all: true } для поиска всех значений,
             в том числе по ForeignKey в промежуточной базе данных
             в данном случае ролей
         */
-        const user = await this.userRepository.findOne({ where: { email }, include: { all: true }, attributes: { exclude: ['password'] } });
+
+        const user = await this.userRepository.findOne({ where, include: { all: true }, attributes: { exclude: withPassword ? [] : ['password'] } });
 
         return user;
-    }
-
-    async getUserById(id: number) {
-        try {
-            const user = await this.userRepository.findOne({ where: { id }, include: { all: true }, attributes: { exclude: ['password'] } });
-            return user;
-        } catch (e) {
-            return null;
-        }
     }
 }

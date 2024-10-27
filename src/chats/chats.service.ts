@@ -23,7 +23,7 @@ export class ChatService {
   }
 
   async createChat(message: string, userId: number) {
-    const user = await this.usersService.getUserById(userId);
+    const user = await this.usersService.getUserByFieldName(userId, 'id');
 
     if (!user || !user.roles.some((role) => role.value === 'USER')) {
       throw new Error('User not found or connetcted to chat user exist.');

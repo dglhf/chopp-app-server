@@ -15,11 +15,6 @@ import { UpdateUserDto } from './dto/update-user.dto';
 export class UsersController {
     constructor(private usersService: UsersService, private authService: AuthService) { }
 
-    /* 
-        TODO: нужно будет убрать метод создания пользователя без авторизации,
-        либо защитить role guard, только ADMIN
-    */
-
     @ApiOperation({ summary: 'User creation' })
     @ApiResponse({ status: 200, type: User })
     @UsePipes(ValidationPipe)
@@ -91,7 +86,7 @@ export class UsersController {
             throw new HttpException('Incorrect user id', HttpStatus.BAD_REQUEST);
         }
 
-        const user = await this.usersService.getUserById(Number(params.id));
+        const user = await this.usersService.getUserByFieldName(params.id, 'id');
 
         if (!user?.id) {
             throw new HttpException('User not found', HttpStatus.BAD_REQUEST);
