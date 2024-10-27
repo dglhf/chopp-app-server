@@ -1,9 +1,9 @@
-const WebSocket = require("ws");
-const http = require("http");
 const crypto = require("crypto");
+const http = require("http");
+const { faker } = require("@faker-js/faker");
 const cors = require("cors");
 const express = require("express");
-const { faker } = require('@faker-js/faker');
+const WebSocket = require("ws");
 
 const app = express();
 const port = 4004;
@@ -15,6 +15,7 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
 const DEFAULT_USER = {
+  id: "000",
   email: "a@a.a",
   fullName: "Ivan Pupkin",
   password: "11111111",
@@ -22,6 +23,7 @@ const DEFAULT_USER = {
 };
 
 const DEFAULT_ADMIN = {
+  id: "111",
   email: "admin@admin.ru",
   fullName: "Admin Adminovich",
   password: "11111111",
@@ -42,6 +44,7 @@ const generateUsers = () => {
       fullName: faker.person.fullName(),
       password: faker.internet.password(),
       phoneNumber: faker.phone.number(),
+      id: faker.number.float(),
     };
   }
   return users;
@@ -151,7 +154,7 @@ wss.on("connection", function connection(ws) {
     JSON.stringify({
       type: "connection",
       message: "Connection successful",
-    })
+    }),
   );
 
   ws.on("message", function incoming(message) {
@@ -162,7 +165,7 @@ wss.on("connection", function connection(ws) {
         JSON.stringify({
           type: "pong",
           message: "Pong!",
-        })
+        }),
       );
     }
 
@@ -171,7 +174,7 @@ wss.on("connection", function connection(ws) {
       receivedData.code === "getHistory"
     ) {
       console.log(
-        "\u041e\u0442\u043f\u0440\u0430\u0432\u043b\u044f\u0435\u043c \u0438\u0441\u0442\u043e\u0440\u0438\u044e \u0441\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u0439"
+        "\u041e\u0442\u043f\u0440\u0430\u0432\u043b\u044f\u0435\u043c \u0438\u0441\u0442\u043e\u0440\u0438\u044e \u0441\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u0439",
       );
       const response = {
         type: "chatHistory",
@@ -190,7 +193,7 @@ wss.on("connection", function connection(ws) {
           message: receivedData.message,
           timeStamp: receivedData.timeStamp,
           type: "typing",
-        })
+        }),
       );
 
       // Отправка typingStopped через 2 секунды
@@ -201,7 +204,7 @@ wss.on("connection", function connection(ws) {
             message: receivedData.message,
             timeStamp: receivedData.timeStamp,
             type: "typing",
-          })
+          }),
         );
       }, 3000);
 
@@ -213,7 +216,7 @@ wss.on("connection", function connection(ws) {
             message: "Thank you for your message. We are looking into it.",
             timeStamp: new Date().valueOf(),
             payload: { sender: "support" },
-          })
+          }),
         );
       }, 6000);
     }
@@ -224,7 +227,7 @@ wss.on("connection", function connection(ws) {
           type: "callStatus",
           message: "processing",
           timeStamp: new Date().valueOf(),
-        })
+        }),
       );
 
       setTimeout(() => {
@@ -233,7 +236,7 @@ wss.on("connection", function connection(ws) {
             type: "callStatus",
             message: "accepted",
             timeStamp: new Date().valueOf(),
-          })
+          }),
         );
       }, 1000);
 
@@ -243,7 +246,7 @@ wss.on("connection", function connection(ws) {
             type: "callStatus",
             message: "onTheWay",
             timeStamp: new Date().valueOf(),
-          })
+          }),
         );
       }, 3000);
 
@@ -253,7 +256,7 @@ wss.on("connection", function connection(ws) {
             type: "callStatus",
             message: "onTheSpot",
             timeStamp: new Date().valueOf(),
-          })
+          }),
         );
       }, 5000);
 
@@ -263,7 +266,7 @@ wss.on("connection", function connection(ws) {
             type: "callStatus",
             message: "completed",
             timeStamp: new Date().valueOf(),
-          })
+          }),
         );
       }, 7000);
     }
@@ -279,7 +282,7 @@ wss.on("connection", function connection(ws) {
           type: "callStatus",
           message: "idle",
           timeStamp: new Date().valueOf(),
-        })
+        }),
       );
     }
   });
@@ -292,7 +295,7 @@ wss.on("connection", function connection(ws) {
         type: "disconnection",
         message: "Disconnected",
         timeStamp: new Date().valueOf(),
-      })
+      }),
     );
   });
 
@@ -302,7 +305,7 @@ wss.on("connection", function connection(ws) {
       JSON.stringify({
         type: "error",
         message: "An error occurred",
-      })
+      }),
     );
   });
 });
@@ -322,45 +325,120 @@ app.post("/api/user/create", (req, res) => {
 });
 
 app.get("/api/users", (req, res) => {
-  const { page = 1, limit = 10, search = "", sort = "fullName", order = "asc" } = req.query;
+  const {
+    page = 1,
+    limit = 10,
+    search = "",
+    sort = "fullName",
+    order = "asc",
+  } = req.query;
 
-  // Конвертируем page и limit в числа для обработки
-  const pageNumber = parseInt(page, 10);
-  const limitNumber = parseInt(limit, 10);
+  const pageNumber = parseInt(page, 10) || 1;
+  const limitNumber = parseInt(limit, 10) || 10;
 
-  // Фильтрация пользователей по строке поиска по всем полям
   const filteredUsers = Object.values(users).filter((user) =>
     Object.values(user).some((value) =>
-      String(value).toLowerCase().includes(search.toLowerCase())
-    )
+      String(value).toLowerCase().includes(search.toLowerCase()),
+    ),
   );
 
-  // Сортировка пользователей
   const sortedUsers = filteredUsers.sort((a, b) => {
-    const valueA = a[sort] ? String(a[sort]).toLowerCase() : ''; // Обеспечиваем нормализацию данных и предотвращаем ошибки
-    const valueB = b[sort] ? String(b[sort]).toLowerCase() : '';
-    if (order === "asc") {
-      return valueA.localeCompare(valueB);
-    } else {
-      return valueB.localeCompare(valueA);
-    }
+    const valueA = a[sort] ? String(a[sort]).toLowerCase() : "";
+    const valueB = b[sort] ? String(b[sort]).toLowerCase() : "";
+    return order === "asc"
+      ? valueA.localeCompare(valueB)
+      : valueB.localeCompare(valueA);
   });
 
-  // Вычисление общего количества страниц
-  const pageCount = Math.ceil(sortedUsers.length / limitNumber);
-
-  // Получение среза пользователей для текущей страницы
   const startIndex = (pageNumber - 1) * limitNumber;
   const endIndex = startIndex + limitNumber;
   const usersOnPage = sortedUsers.slice(startIndex, endIndex);
 
-  // Возвращаем данные пользователей с информацией о пагинации
   res.json({
-    users: usersOnPage,
-    page: pageNumber,
-    totalPages: pageCount,
-    totalUsers: sortedUsers.length,
+    items: usersOnPage,
+    pageNumber,
+    totalPages: Math.ceil(sortedUsers.length / limitNumber),
+    totalRecords: sortedUsers.length,
   });
+});
+
+// New fetchCallHistory endpoint with mock data
+app.get("/api/users/:userId/callHistory", (req, res) => {
+  const { userId } = req.params;
+  const {
+    page = 1,
+    limit = 10,
+    search = "",
+    sort = "date",
+    order = "asc",
+  } = req.query;
+
+  const pageNumber = parseInt(page, 10) || 1;
+  const limitNumber = parseInt(limit, 10) || 10;
+
+  // Mock call history data
+  const callHistory = Array.from({ length: 20 }).map((_, index) => {
+    const userIndex = Math.round(
+      Math.random() * (Object.values(users).length - 1),
+    );
+
+    const userKey = Object.keys(users)[userIndex];
+
+    console.log("userIndex: ", userIndex);
+    console.log("users: ", users);
+    return {
+      date: faker.date.recent(90).toISOString(),
+      status: randomize([
+        "processing",
+        "accepted",
+        "onTheWay",
+        "onTheSpot",
+        "completed",
+        "canceled"
+      ]),
+      address: faker.address.streetAddress(),
+      comment: faker.lorem.sentence(),
+      id: faker.number.float(),
+      userId: users[userKey].id, // Связываем каждый вызов с ID пользователя
+      userFullName: users[userKey].fullName,
+    };
+  });
+
+  // Apply search and sort filters
+  const filteredHistory = callHistory
+    .filter((entry) =>
+      entry.comment.toLowerCase().includes(search.toLowerCase()),
+    )
+    .sort((a, b) => {
+      const valueA = a[sort] || "";
+      const valueB = b[sort] || "";
+      return order === "asc"
+        ? valueA.localeCompare(valueB)
+        : valueB.localeCompare(valueA);
+    });
+
+  // Paginate the results
+  const startIndex = (pageNumber - 1) * limitNumber;
+  const endIndex = startIndex + limitNumber;
+  const historyForPage = filteredHistory.slice(startIndex, endIndex);
+
+  res.json({
+    items: historyForPage,
+    pageNumber,
+    totalPages: Math.ceil(filteredHistory.length / limitNumber),
+    totalRecords: filteredHistory.length,
+  });
+});
+
+app.get("/api/users/:id", (req, res) => {
+  const { id } = req.params;
+  const user = Object.values(users).find((user) => user.id.toString() === id);
+
+  if (user) {
+    res.json(user);
+  } else {
+    res.status(404).json({ errorMessage: "User not found" });
+  }
 });
 
 app.post("/api/auth/login", (req, res) => {
@@ -368,7 +446,7 @@ app.post("/api/auth/login", (req, res) => {
   if (
     users[login.toLocaleLowerCase()] &&
     users[login.toLocaleLowerCase()].password.toLocaleLowerCase() ===
-      password.toLocaleLowerCase()
+    password.toLocaleLowerCase()
   ) {
     const tokens = generateTokens();
     users[login.toLocaleLowerCase()] = {
@@ -397,10 +475,14 @@ app.put("/api/currentUser", (req, res) => {
   }
 });
 
+app.patch("/api/call/:id", (req, res) => {
+  res.status(200).json({ message: "OK" });
+});
+
 app.post("/api/refresh", (req, res) => {
   const { refreshToken } = req.body;
   const user = Object.values(users).find(
-    (user) => user.refreshToken === refreshToken
+    (user) => user.refreshToken === refreshToken,
   );
   if (user) {
     const tokens = generateTokens();
@@ -423,3 +505,11 @@ app.get("/api/currentUser", (req, res) => {
 server.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
+
+function randomize(items) {
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new Error("Please provide a non-empty array.");
+  }
+  const randomIndex = Math.floor(Math.random() * items.length);
+  return items[randomIndex];
+}

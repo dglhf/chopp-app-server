@@ -30,15 +30,23 @@ export class AuthService {
     }
 
     private async checkValidityUser(authDto: AuthDto) {
-        const user = await this.usersService.getUserByEmail(authDto.email);
-
-        if (!user) {
+        if (!authDto.login) {
             throw new UnauthorizedException({ message: 'User not found' });
         }
-        const isPasswordsEquals = await bcrypt.compare(authDto.password, user.password);
 
-        if (user && isPasswordsEquals) {
-            return user;
+        const userByEmail = await this.usersService.getUserByFieldName(authDto.login, 'email', true);
+        const userByPhoneNumber = await this.usersService.getUserByFieldName(authDto.login, 'phoneNumber', true);
+
+        const correctUser = userByEmail || userByPhoneNumber;
+
+        if (!correctUser) {
+            throw new UnauthorizedException({ message: 'User not found' });
+        }
+
+        const isPasswordsEquals = await bcrypt.compare(authDto.password, correctUser.password);
+
+        if (isPasswordsEquals) {
+            return correctUser;
         }
 
         throw new UnauthorizedException({ message: 'Password is not correct' });
@@ -50,10 +58,16 @@ export class AuthService {
     }
 
     async registration(userDto: CreateUserDto) {
-        const candidate = await this.usersService.getUserByEmail(userDto.email);
+        const candidateByEmain = await this.usersService.getUserByFieldName(userDto.email, 'email');
 
-        if (candidate) {
+        if (candidateByEmain) {
             throw new HttpException('User with this email already exist', HttpStatus.BAD_REQUEST);
+        }
+
+        const candidateByPhoneNumber = await this.usersService.getUserByFieldName(userDto.phoneNumber, 'phoneNumber');
+
+        if (candidateByPhoneNumber) {
+            throw new HttpException('User with this phone number already exist', HttpStatus.BAD_REQUEST);
         }
 
         const hashPassword = await bcrypt.hash(userDto.password, 5);
@@ -83,7 +97,7 @@ export class AuthService {
             throw new UnauthorizedException({ message: 'Invalid refresh token' });
         }
 
-        const user = await this.usersService.getUserById(payload.id);
+        const user = await this.usersService.getUserByFieldName(payload.id, 'id');
 
         if (!user) {
             throw new UnauthorizedException({ message: 'Invalid user' });
@@ -95,7 +109,7 @@ export class AuthService {
     async getUserByTokenPayload(accessToken: string) {
         try {
             const payload = this.verifyToken(accessToken, process.env.JWT_ACCESS_SECRET_HEX);
-            const user = await this.usersService.getUserById(payload.id);
+            const user = await this.usersService.getUserByFieldName(payload.id, 'id');
 
             return user;
         } catch (e) {

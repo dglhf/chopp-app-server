@@ -9,6 +9,8 @@ async function bootstrap() {
   const API_PREFIX = process.env.API_PREFIX || DEFAULT_API_PREFIX;
   const app = await NestFactory.create(AppModule);
 
+  app.enableCors({ origin: '*', allowedHeaders: '*' })
+
   app.setGlobalPrefix(API_PREFIX);
 
   const config = new DocumentBuilder()

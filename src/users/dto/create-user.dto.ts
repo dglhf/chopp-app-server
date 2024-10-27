@@ -15,7 +15,7 @@ export class CreateUserDto {
     @IsEmail({}, { message: 'Field must be email' })
     readonly email: string;
 
-    @ApiProperty({ example: '1234', description: 'password' })
+    @ApiProperty({ example: '12345678', description: 'password' })
     @IsString({ message: 'STRING field type expected' })
     @Length(PASSWORD_MINIMAL_LENGTH, PASSWORD_MAXIMUM_LENGTH, { message: `Password must be from ${PASSWORD_MINIMAL_LENGTH} to ${PASSWORD_MAXIMUM_LENGTH} characters` })
     readonly password: string;
