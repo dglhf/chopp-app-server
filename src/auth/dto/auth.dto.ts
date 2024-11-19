@@ -5,9 +5,9 @@ const PASSWORD_MINIMAL_LENGTH = 8;
 const PASSWORD_MAXIMUM_LENGTH = 16;
 
 export class AuthDto {
-    @ApiProperty({ example: 'user@gmail.com or 8-989-898-98-98', description: 'unique email or phone number' })
+    @ApiProperty({ example: '8-989-898-98-98', description: 'unique phone number' })
     @IsString({ message: 'STRING field type expected' })
-    readonly login: string;
+    readonly phoneNumber: string;
 
     @ApiProperty({ example: '12345678', description: 'password' })
     @IsString({ message: 'STRING field type expected' })

@@ -30,14 +30,12 @@ export class AuthService {
     }
 
     private async checkValidityUser(authDto: AuthDto) {
-        if (!authDto.login) {
+        if (!authDto.phoneNumber) {
             throw new UnauthorizedException({ message: 'User not found' });
         }
 
-        const userByEmail = await this.usersService.getUserByFieldName(authDto.login, 'email', true);
-        const userByPhoneNumber = await this.usersService.getUserByFieldName(authDto.login, 'phoneNumber', true);
-
-        const correctUser = userByEmail || userByPhoneNumber;
+        const userByPhoneNumber = await this.usersService.getUserByFieldName(authDto.phoneNumber, 'phoneNumber', true);
+        const correctUser = userByPhoneNumber;
 
         if (!correctUser) {
             throw new UnauthorizedException({ message: 'User not found' });
@@ -102,6 +100,8 @@ export class AuthService {
         if (!user) {
             throw new UnauthorizedException({ message: 'Invalid user' });
         }
+
+        console.log('----this.generateTokens(user): ', this.generateTokens(user))
 
         return this.generateTokens(user);
     }

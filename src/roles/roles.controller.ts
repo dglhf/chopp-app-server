@@ -15,6 +15,8 @@ export class RolesController {
         и проставить Role guard для запроса всем ролей
     */
 
+    // TODO: Сделать создание ролей этапом бутстрапа приложения
+
     @ApiOperation({ summary: 'Role creation' })
     @ApiResponse({ status: 200, type: Role })
     @Post()

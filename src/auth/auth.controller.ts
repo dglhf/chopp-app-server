@@ -25,7 +25,6 @@ export class AuthController {
 
     @Post('/refresh')
     async refresh(@Body() { refreshToken }: RefreshDto, @Req() request, @Res({ passthrough: true }) response) {
-
         // can use it, if "refresh in cookies" case
         // const { refreshToken: cookiesRefreshToken } = request.cookies;
 
