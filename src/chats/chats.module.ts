@@ -9,14 +9,12 @@ import { RolesModule } from 'src/roles/roles.module';
 import { UsersModule } from 'src/users/users.module';
 
 @Module({
-    providers: [ChatGateway, ChatService],
-    imports: [
-      SequelizeModule.forFeature([User, Chat, UserChats]),
-      RolesModule,
-      UsersModule,
-    ],
-    exports: [
-      ChatService,
-    ],
+  providers: [ChatGateway, ChatService],
+  imports: [
+    SequelizeModule.forFeature([User, Chat, UserChats]),
+    RolesModule,
+    UsersModule,
+  ],
+  exports: [ChatService],
 })
 export class ChatsModule {}
