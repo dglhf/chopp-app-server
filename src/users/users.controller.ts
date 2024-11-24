@@ -22,6 +22,7 @@ import { Roles } from 'src/auth/roles-auth.decorator';
 import { ValidationPipe } from 'src/pipes/validation.pipe';
 import { AuthService } from 'src/auth/auth.service';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateAdminDto } from './dto/create-admin.dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -30,6 +31,35 @@ export class UsersController {
     private usersService: UsersService,
     private authService: AuthService,
   ) {}
+
+  @Post('/createAdmin')
+  @ApiOperation({ summary: 'Create an admin account' })
+  @ApiResponse({
+    status: 201,
+    description: 'Admin created successfully.',
+    type: User,
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  @UsePipes(new ValidationPipe())
+  async createAdmin(@Body() createAdminDto: CreateAdminDto) {
+    // Проверка учетных данных суперадмина
+    const isAuthenticated = await this.authService.authenticateSuperAdmin(
+      createAdminDto.superadminLogin,
+      createAdminDto.superadminPassword,
+    );
+
+    if (!isAuthenticated) {
+      throw new HttpException(
+        'Superadmin authentication failed',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    return this.usersService.createAdmin({
+      adminLogin: createAdminDto.adminLogin,
+      adminPassword: createAdminDto.adminPassword,
+    });
+  }
 
   @ApiOperation({ summary: 'User creation' })
   @ApiResponse({ status: 200, type: User })

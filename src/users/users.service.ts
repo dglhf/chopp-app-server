@@ -6,13 +6,43 @@ import { User } from './users.model';
 import { CreateUserDto } from './dto/create-user.dto';
 import { RolesService } from 'src/roles/roles.service';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { Role } from 'src/roles/roles.model';
+import { CreateAdminDto } from './dto/create-admin.dto';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectModel(User) private userRepository: typeof User,
+    @InjectModel(Role) private roleRepository: typeof Role,
     private roleService: RolesService,
   ) {}
+
+  async createAdmin(
+    createAdminDto: Omit<
+      CreateAdminDto,
+      'superadminLogin' | 'superadminPassword'
+    >,
+  ): Promise<User> {
+    const { adminLogin, adminPassword } = createAdminDto;
+
+    const hashedPassword = await bcrypt.hash(adminPassword, 10);
+    const newUser = await this.userRepository.create({
+      email: adminLogin,
+      password: hashedPassword,
+      fullName: 'New Admin',
+      phoneNumber: '000-000-0000',
+    });
+
+    const adminRole = await this.roleRepository.findOne({
+      where: { value: 'ADMIN' },
+    });
+    if (!adminRole) {
+      throw new Error('Admin role not found. Please seed the roles.');
+    }
+
+    await newUser.$set('roles', [adminRole.id]);
+    return newUser;
+  }
 
   async createUser(dto: CreateUserDto) {
     const user = await this.userRepository.create(dto);

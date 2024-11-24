@@ -35,31 +35,42 @@ export class AuthService {
   }
 
   private async checkValidityUser(authDto: AuthDto) {
-    if (!authDto.phoneNumber) {
-      throw new UnauthorizedException({ message: 'User not found' });
+    let user;
+
+    console.log('authDto: ', authDto);
+    if (authDto.email) {
+      user = await this.usersService.getUserByFieldName(
+        authDto.email,
+        'email',
+        true,
+      );
+    } else if (authDto.phoneNumber) {
+      user = await this.usersService.getUserByFieldName(
+        authDto.phoneNumber,
+        'phoneNumber',
+        true,
+      );
+    } else {
+      throw new UnauthorizedException({
+        message: 'User not found',
+      });
     }
 
-    const userByPhoneNumber = await this.usersService.getUserByFieldName(
-      authDto.phoneNumber,
-      'phoneNumber',
-      true,
-    );
-    const correctUser = userByPhoneNumber;
-
-    if (!correctUser) {
-      throw new UnauthorizedException({ message: 'User not found' });
+    if (!user) {
+      throw new UnauthorizedException({ message: 'User not found.' });
     }
+
+    console.log('user: ', user);
 
     const isPasswordsEquals = await bcrypt.compare(
       authDto.password,
-      correctUser.password,
+      user.password,
     );
-
-    if (isPasswordsEquals) {
-      return correctUser;
+    if (!isPasswordsEquals) {
+      throw new UnauthorizedException({ message: 'User not found..' });
     }
 
-    throw new UnauthorizedException({ message: 'Password is not correct' });
+    return user;
   }
 
   async login(authDto: AuthDto) {
@@ -148,5 +159,17 @@ export class AuthService {
     } catch (e) {
       throw new HttpException('User not found', HttpStatus.BAD_REQUEST);
     }
+  }
+
+  async authenticateSuperAdmin(
+    login: string,
+    password: string,
+  ): Promise<boolean> {
+    // Здесь должна быть логика для проверки учетных данных суперадмина,
+    // например, сравнение с хранимыми значениями в переменных окружения
+    return (
+      login === process.env.SUPERADMIN_LOGIN &&
+      password === process.env.SUPERADMIN_PASSWORD
+    );
   }
 }
