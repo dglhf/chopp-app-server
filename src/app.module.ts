@@ -10,6 +10,7 @@ import { AuthModule } from './auth/auth.module';
 import { ChatsModule } from './chats/chats.module';
 import { UserChats } from './chats/user-chats.model';
 import { Chat } from './chats/chats.model';
+import { CategoriesModule } from './categories/categories.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { Chat } from './chats/chats.model';
     RolesModule,
     AuthModule,
     ChatsModule,
+    CategoriesModule,
   ],
   controllers: [],
   providers: [],
