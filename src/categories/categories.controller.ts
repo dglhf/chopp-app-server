@@ -1,11 +1,12 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  Param,
+  ParseIntPipe,
   Post,
   Put,
-  UsePipes,
-  ValidationPipe,
 } from '@nestjs/common';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { CategoriesService } from './categories.service';
@@ -19,7 +20,7 @@ export class CategoriesController {
   constructor(private categoriesService: CategoriesService) {}
 
   @Post()
-  @UsePipes(new ValidationPipe({ transform: true }))
+  @ApiOperation({ summary: 'Create category' })
   createCategory(@Body() createCategoryDto: CreateCategoryDto) {
     return this.categoriesService.createCategory(createCategoryDto);
   }
@@ -31,11 +32,18 @@ export class CategoriesController {
   }
 
   @Put()
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   @ApiOperation({ summary: 'Update multiple categories' })
   updateCategories(
     @Body() updateCategoryDtos: UpdateCategoryDto[],
   ): Promise<Category[]> {
     return this.categoriesService.updateCategories(updateCategoryDtos);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete a category and return updated list' })
+  async deleteCategory(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<Category[]> {
+    return this.categoriesService.deleteCategory(id);
   }
 }

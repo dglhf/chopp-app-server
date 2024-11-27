@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Category } from './category.model';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { Sequelize, Op } from 'sequelize';
 
 @Injectable()
 export class CategoriesService {
@@ -28,5 +29,29 @@ export class CategoriesService {
       }
     });
     return Promise.all(updatedCategories);
+  }
+
+  async deleteCategory(id: number): Promise<Category[]> {
+    const categoryToDelete = await this.categoryModel.findByPk(id);
+    if (!categoryToDelete) {
+      throw new NotFoundException(`Category with ID ${id} not found`);
+    }
+
+    return await this.categoryModel.sequelize.transaction(async (t) => {
+      await categoryToDelete.destroy({ transaction: t });
+      await this.categoryModel.update(
+        { order: Sequelize.literal('"order" - 1') },
+        {
+          where: { order: { [Op.gt]: categoryToDelete.order } },
+          transaction: t,
+        },
+      );
+
+      // Returning the updated list of categories
+      return this.categoryModel.findAll({
+        order: [['order', 'ASC']],
+        transaction: t,
+      });
+    });
   }
 }
