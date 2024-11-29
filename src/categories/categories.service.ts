@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Category } from './category.model';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -12,7 +17,19 @@ export class CategoriesService {
     private categoryModel: typeof Category,
   ) {}
 
+  //   TODO: Сделать при бутстрпе дефолтную категорию "Без категории"
   async createCategory(dto: CreateCategoryDto): Promise<Category> {
+    const existingCategory = await this.categoryModel.findOne({
+      where: { title: dto.title },
+    });
+
+    if (existingCategory) {
+      throw new HttpException(
+        'Category with this title already exists',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     const category = await this.categoryModel.create(dto);
     return category;
   }
