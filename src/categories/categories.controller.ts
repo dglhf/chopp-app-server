@@ -12,7 +12,9 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { CategoriesService } from './categories.service';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Category } from './category.model';
-import { UpdateCategoryDto } from './dto/update-category.dto';
+
+import { UpdateCategoriesDto } from './dto/update-categories.dto';
+import { UpdateCategoryDto } from './dto/update-category-title.dto';
 
 @ApiTags('categories')
 @Controller('categories')
@@ -34,9 +36,9 @@ export class CategoriesController {
   @Put()
   @ApiOperation({ summary: 'Update multiple categories' })
   updateCategories(
-    @Body() updateCategoryDtos: UpdateCategoryDto[],
+    @Body() updateCategoriesDtos: UpdateCategoriesDto[],
   ): Promise<Category[]> {
-    return this.categoriesService.updateCategories(updateCategoryDtos);
+    return this.categoriesService.updateCategories(updateCategoriesDtos);
   }
 
   @Delete(':id')
@@ -45,5 +47,14 @@ export class CategoriesController {
     @Param('id', ParseIntPipe) id: number,
   ): Promise<Category[]> {
     return this.categoriesService.deleteCategory(id);
+  }
+
+  @Put(':id/title')
+  @ApiOperation({ summary: 'Update category title' })
+  async updateCategoryTitle(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() { title }: UpdateCategoryDto,
+  ): Promise<Category> {
+    return this.categoriesService.updateCategoryTitle(id, title);
   }
 }
