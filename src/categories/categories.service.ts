@@ -84,7 +84,7 @@ export class CategoriesService implements OnModuleInit {
     const existingCategory = await this.categoryModel.findOne({
       where: { title: newTitle },
     });
-    if (existingCategory) {
+    if (existingCategory && existingCategory.id !== id) {
       throw new HttpException(
         `Category with title "${newTitle}" already exists`,
         HttpStatus.BAD_REQUEST,
