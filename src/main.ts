@@ -9,7 +9,7 @@ async function bootstrap() {
   const API_PREFIX = process.env.API_PREFIX || DEFAULT_API_PREFIX;
   const app = await NestFactory.create(AppModule);
 
-  app.enableCors({ origin: '*', allowedHeaders: '*' })
+  app.enableCors({ origin: '*', allowedHeaders: '*' });
 
   app.setGlobalPrefix(API_PREFIX);
 
@@ -22,7 +22,9 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup(`/${API_PREFIX}/docs`, app, document);
 
-  await app.listen(PORT, () => console.log(`server started on port === ${PORT}`));
+  await app.listen(PORT, () =>
+    console.log(`server started on port === ${PORT}`),
+  );
 }
 
 bootstrap();

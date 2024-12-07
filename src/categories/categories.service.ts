@@ -11,6 +11,7 @@ import { Category } from './category.model';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { Sequelize, Op } from 'sequelize';
 import { UpdateCategoriesDto } from './dto/update-categories.dto';
+import chalk from 'chalk';
 
 @Injectable()
 export class CategoriesService implements OnModuleInit {
@@ -31,7 +32,9 @@ export class CategoriesService implements OnModuleInit {
         order: categories.length,
       });
 
-      this.logger.log('Created default category: Без категории');
+      this.logger.log(
+        chalk.green('🚀 Created default CATEGORY: Без категории '),
+      );
     }
   }
 

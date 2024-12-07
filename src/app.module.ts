@@ -11,6 +11,7 @@ import { ChatsModule } from './chats/chats.module';
 import { UserChats } from './chats/user-chats.model';
 import { Chat } from './chats/chats.model';
 import { CategoriesModule } from './categories/categories.module';
+import { PricingModule } from './pricing/pricing.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { CategoriesModule } from './categories/categories.module';
     AuthModule,
     ChatsModule,
     CategoriesModule,
+    PricingModule,
   ],
   controllers: [],
   providers: [],
