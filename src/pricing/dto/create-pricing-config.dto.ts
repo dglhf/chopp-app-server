@@ -1,16 +1,24 @@
-import { IsBoolean, IsNumber, IsOptional } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CreatePricingConfigDto {
-  @IsNumber()
-  @IsOptional()
-  id?: number; // Сделать поле необязательным
+  @ApiProperty({
+    example: 20.0,
+    description: 'Average cost of delivery, can be null if not specified',
+    required: false,
+  })
+  averageDeliveryCost?: number;
 
-  @IsNumber()
-  averageDeliveryCost: number;
+  @ApiProperty({
+    example: false,
+    description: 'Indicates if free delivery is included, defaults to false',
+    required: false,
+  })
+  freeDeliveryIncluded?: boolean;
 
-  @IsBoolean()
-  freeDeliveryIncluded: boolean;
-
-  @IsNumber()
-  freeDeliveryThreshold: number;
+  @ApiProperty({
+    example: 100.0,
+    description: 'Threshold for free delivery, can be null if not specified',
+    required: false,
+  })
+  freeDeliveryThreshold?: number;
 }

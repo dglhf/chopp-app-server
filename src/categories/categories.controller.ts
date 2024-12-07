@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { CategoriesService } from './categories.service';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Category } from './category.model';
 
 import { UpdateCategoriesDto } from './dto/update-categories.dto';
@@ -25,6 +25,11 @@ export class CategoriesController {
 
   @Post()
   @ApiOperation({ summary: 'Create category' })
+  @ApiResponse({
+    status: 201,
+    description: 'Category created successfully.',
+    type: Category,
+  })
   @UseGuards(JwtAuthGuard)
   createCategory(@Body() createCategoryDto: CreateCategoryDto) {
     return this.categoriesService.createCategory(createCategoryDto);
@@ -32,6 +37,11 @@ export class CategoriesController {
 
   @Get()
   @ApiOperation({ summary: 'Get all categories' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of categories',
+    type: [Category],
+  })
   @UseGuards(JwtAuthGuard)
   getAllCategories(): Promise<Category[]> {
     return this.categoriesService.getAllCategories();
@@ -39,6 +49,11 @@ export class CategoriesController {
 
   @Put()
   @ApiOperation({ summary: 'Update multiple categories' })
+  @ApiResponse({
+    status: 200,
+    description: 'Categories updated successfully.',
+    type: [Category],
+  })
   @UseGuards(JwtAuthGuard)
   updateCategories(
     @Body() updateCategoriesDtos: UpdateCategoriesDto[],
@@ -48,6 +63,11 @@ export class CategoriesController {
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a category and return updated list' })
+  @ApiResponse({
+    status: 200,
+    description: 'Category deleted and updated list returned.',
+    type: [Category],
+  })
   @UseGuards(JwtAuthGuard)
   async deleteCategory(
     @Param('id', ParseIntPipe) id: number,
@@ -57,6 +77,11 @@ export class CategoriesController {
 
   @Put(':id/title')
   @ApiOperation({ summary: 'Update category title' })
+  @ApiResponse({
+    status: 200,
+    description: 'Category title updated successfully.',
+    type: Category,
+  })
   @UseGuards(JwtAuthGuard)
   async updateCategoryTitle(
     @Param('id', ParseIntPipe) id: number,
