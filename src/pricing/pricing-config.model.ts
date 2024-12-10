@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Column, Model, Table, DataType } from 'sequelize-typescript';
 
-@Table({ tableName: 'pricing' })
+@Table({ tableName: 'pricing_config' })
 export class PricingConfig extends Model<PricingConfig> {
   @ApiProperty({
     example: '1',

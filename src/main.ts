@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import sequelize from 'sequelize';
 
 const DEFAULT_API_PREFIX = 'api';
 

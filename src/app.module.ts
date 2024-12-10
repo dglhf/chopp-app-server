@@ -12,6 +12,11 @@ import { UserChats } from './chats/user-chats.model';
 import { Chat } from './chats/chats.model';
 import { CategoriesModule } from './categories/categories.module';
 import { PricingModule } from './pricing/pricing.module';
+import { ProductsModule } from './products/products.module';
+import { FilesModule } from './files/files.module';
+import { Category } from './categories/category.model';
+import { Product } from './products/product.model';
+import { PricingConfig } from './pricing/pricing-config.model';
 
 @Module({
   imports: [
@@ -25,7 +30,16 @@ import { PricingModule } from './pricing/pricing.module';
       username: process.env.POSTGRES_USER,
       password: process.env.POSTGRES_PASSWORD,
       database: process.env.POSTGRES_DB,
-      models: [User, Role, Chat, UserRoles, UserChats],
+      models: [
+        User,
+        Role,
+        Chat,
+        UserRoles,
+        UserChats,
+        Category,
+        Product,
+        PricingConfig,
+      ],
       autoLoadModels: true,
     }),
     UsersModule,
@@ -34,6 +48,8 @@ import { PricingModule } from './pricing/pricing.module';
     ChatsModule,
     CategoriesModule,
     PricingModule,
+    ProductsModule,
+    FilesModule,
   ],
   controllers: [],
   providers: [],

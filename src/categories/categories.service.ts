@@ -32,9 +32,7 @@ export class CategoriesService implements OnModuleInit {
         order: categories.length,
       });
 
-      this.logger.log(
-        chalk.green('🚀 Created default CATEGORY: Без категории '),
-      );
+      this.logger.log('🚀 Created default CATEGORY: Без категории ');
     }
   }
 

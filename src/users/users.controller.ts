@@ -41,6 +41,8 @@ export class UsersController {
   })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @UsePipes(new ValidationPipe())
+  // TODO: Текущий флоу создания админа надо пересмотреть. Защита сейчас заключается в том, чтобы прислать на /createAdmin нужные логин и пароль суперадмина
+  // @UseGuards(JwtAuthGuard)
   async createAdmin(@Body() createAdminDto: CreateAdminDto) {
     // Проверка учетных данных суперадмина
     const isAuthenticated = await this.authService.authenticateSuperAdmin(
