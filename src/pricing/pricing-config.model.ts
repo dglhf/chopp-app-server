@@ -25,6 +25,10 @@ export class PricingConfig extends Model<PricingConfig> {
   })
   averageDeliveryCost?: number;
 
+  @ApiProperty({
+    example: 'true',
+    description: 'Does free delivery included',
+  })
   @Column({
     type: DataType.BOOLEAN,
     allowNull: true,
@@ -32,6 +36,10 @@ export class PricingConfig extends Model<PricingConfig> {
   })
   freeDeliveryIncluded: boolean;
 
+  @ApiProperty({
+    example: '200',
+    description: 'Amount from witch free delivery applied',
+  })
   @Column({
     type: DataType.FLOAT,
     allowNull: true,
