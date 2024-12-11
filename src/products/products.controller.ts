@@ -24,6 +24,7 @@ export class ProductsController {
     @UploadedFiles() files: { images?: File[] },
     @Body() productData: CreateProductDto,
   ) {
+    console.log('productData: ', productData)
     const imageUrls = await Promise.all(
       files.images?.map((file) => this.filesService.uploadFile(file)) || [],
     );

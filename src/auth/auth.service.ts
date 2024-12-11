@@ -60,8 +60,6 @@ export class AuthService {
       throw new UnauthorizedException({ message: 'User not found.' });
     }
 
-    console.log('user: ', user);
-
     const isPasswordsEquals = await bcrypt.compare(
       authDto.password,
       user.password,

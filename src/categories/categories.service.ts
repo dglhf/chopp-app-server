@@ -11,7 +11,6 @@ import { Category } from './category.model';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { Sequelize, Op } from 'sequelize';
 import { UpdateCategoriesDto } from './dto/update-categories.dto';
-import chalk from 'chalk';
 
 @Injectable()
 export class CategoriesService implements OnModuleInit {
@@ -36,7 +35,6 @@ export class CategoriesService implements OnModuleInit {
     }
   }
 
-  //   TODO: Сделать при бутстрпе дефолтную категорию "Без категории"
   async createCategory(dto: CreateCategoryDto): Promise<Category> {
     const existingCategory = await this.categoryModel.findOne({
       where: { title: dto.title },

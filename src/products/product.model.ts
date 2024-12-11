@@ -1,4 +1,12 @@
-import { Column, Model, Table, DataType } from 'sequelize-typescript';
+import {
+  Column,
+  Model,
+  Table,
+  DataType,
+  BelongsTo,
+  ForeignKey,
+} from 'sequelize-typescript';
+import { Category } from 'src/categories/category.model';
 
 @Table({ tableName: 'products' })
 export class Product extends Model<Product> {
@@ -27,4 +35,17 @@ export class Product extends Model<Product> {
     allowNull: false,
   })
   price: number;
+
+  @Column({
+    type: DataType.ARRAY(DataType.STRING),
+    allowNull: false,
+  })
+  images: string[];
+
+  @BelongsTo(() => Category)
+  category: Category;
+
+  @ForeignKey(() => Category)
+  @Column
+  categoryId: number;
 }
