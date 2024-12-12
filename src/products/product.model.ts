@@ -19,13 +19,13 @@ export class Product extends Model<Product> {
   id: number;
 
   @Column({
-    type: DataType.STRING,
+    type: DataType.TEXT, // Increased length for title
     allowNull: false,
   })
   title: string;
 
   @Column({
-    type: DataType.STRING,
+    type: DataType.TEXT, // Use TEXT for potentially very long descriptions
     allowNull: false,
   })
   description: string;

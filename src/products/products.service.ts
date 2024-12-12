@@ -30,4 +30,30 @@ export class ProductService {
     const product = await this.productRepository.create(dto);
     return product;
   }
+
+  async findAllProducts(
+    page: number,
+    limit: number,
+    categoryId: number,
+    sort: string,
+    order: string,
+  ) {
+    const offset = (page - 1) * limit;
+    const whereCondition = categoryId ? { categoryId } : {};
+
+    const { rows: items, count: totalItems } =
+      await this.productRepository.findAndCountAll({
+        where: whereCondition,
+        limit,
+        offset,
+        order: [[sort, order.toUpperCase()]],
+      });
+
+    return {
+      items,
+      totalItems,
+      totalPages: Math.ceil(totalItems / limit),
+      page,
+    };
+  }
 }
