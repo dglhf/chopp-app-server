@@ -17,12 +17,19 @@ export class CreateProductDto {
   description: string;
 
   @ApiProperty({
-    description: 'Product Price',
+    description: 'Product price',
     example: 100,
   })
   @IsNumber()
   @Min(0)
   price: number;
+
+  @ApiProperty({
+    description: 'Product category',
+    example: 1,
+  })
+  @IsNumber()
+  categoryId: number;
 
   @ApiProperty({
     description: 'Product images',

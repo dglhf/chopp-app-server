@@ -10,7 +10,9 @@ import { File } from 'multer';
 import { FilesService } from '../files/files.service';
 import { ProductService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('products')
 @Controller('products')
 export class ProductsController {
   constructor(
@@ -24,14 +26,14 @@ export class ProductsController {
     @UploadedFiles() files: { images?: File[] },
     @Body() productData: CreateProductDto,
   ) {
-    console.log('productData: ', productData)
+    console.log('productData: ', productData);
     const imageUrls = await Promise.all(
       files.images?.map((file) => this.filesService.uploadFile(file)) || [],
     );
 
     return this.productService.createProduct({
       ...productData,
-      images: imageUrls,
+      images: imageUrls.map((item) => item.path),
     });
   }
 }

@@ -17,12 +17,17 @@ import { FilesModule } from './files/files.module';
 import { Category } from './categories/category.model';
 import { Product } from './products/product.model';
 import { PricingConfig } from './pricing/pricing-config.model';
+// import { join } from 'path';
+// import { ServeStaticModule } from '@nestjs/serve-static';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       envFilePath: `.env.${process.env.NODE_ENV}`,
     }),
+    // ServeStaticModule.forRoot({
+    //   rootPath: join(__dirname, '..', 'client'),
+    // }),
     SequelizeModule.forRoot({
       dialect: 'postgres',
       host: process.env.POSTGRES_HOST,

@@ -27,6 +27,7 @@
     "@nestjs/platform-express": "^10.4.1",
     "@nestjs/platform-socket.io": "^10.4.5",
     "@nestjs/sequelize": "^10.0.1",
+    "@nestjs/serve-static": "4.0.1",
     "@nestjs/swagger": "^7.4.0",
     "@nestjs/websockets": "^10.4.5",
     "aws-sdk": "^2.1692.0",
@@ -41,7 +42,8 @@
     "sequelize": "^6.37.5",
     "sequelize-typescript": "^2.1.6",
     "socket.io": "^4.8.0",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "uuid": "^11.0.3"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",

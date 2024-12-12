@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import sequelize from 'sequelize';
+import * as express from 'express';
 
 const DEFAULT_API_PREFIX = 'api';
 
@@ -13,6 +13,8 @@ async function bootstrap() {
   app.enableCors({ origin: '*', allowedHeaders: '*' });
 
   app.setGlobalPrefix(API_PREFIX);
+
+  app.use('/uploads', express.static('./uploads'));
 
   const config = new DocumentBuilder()
     .setTitle("Chopp app's methods description")
