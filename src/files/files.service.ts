@@ -28,6 +28,8 @@ export class FilesService {
 
   async uploadFile(file: File): Promise<FileModel> {
     const fileHash = this.computeHash(file.buffer);
+
+    //Потенциально узкое горлышко, поиск по записям файлов
     let fileRecord = await this.fileModel.findOne({
       where: { hash: fileHash },
     });
