@@ -2,6 +2,7 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Product } from './product.model';
 import { CreateProductDto } from './dto/create-product.dto';
+import { Category } from 'src/categories/category.model';
 
 @Injectable()
 export class ProductService {
@@ -46,7 +47,11 @@ export class ProductService {
         where: whereCondition,
         limit,
         offset,
+        include: [{ model: Category }],
         order: [[sort, order.toUpperCase()]],
+        attributes: {
+          exclude: ['categoryId'],
+        },
       });
 
     return {

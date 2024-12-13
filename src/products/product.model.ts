@@ -42,9 +42,11 @@ export class Product extends Model<Product> {
   })
   images: string[];
 
+  //Говорим что у Product есть связь с Category
   @BelongsTo(() => Category)
   category: Category;
 
+  //ForeignKey для таблицы Category
   @ForeignKey(() => Category)
   @Column
   categoryId: number;
