@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { Product } from './product.model';
 import { CreateProductDto } from './dto/create-product.dto';
 import { Category } from 'src/categories/category.model';
+import { Op } from 'sequelize';
 
 @Injectable()
 export class ProductService {
@@ -36,19 +37,30 @@ export class ProductService {
     page: number,
     limit: number,
     categoryId: number,
+    search: string,
     sort: string,
     order: string,
   ) {
     const offset = (page - 1) * limit;
-    const whereCondition = categoryId ? { categoryId } : {};
+    const whereCondition = {
+      ...(categoryId ? { categoryId } : {}),
+      ...(search
+        ? {
+            [Op.or]: [
+              { title: { [Op.iLike]: `%${search}%` } },
+              { description: { [Op.iLike]: `%${search}%` } },
+            ],
+          }
+        : {}),
+    };
 
     const { rows: items, count: totalItems } =
       await this.productRepository.findAndCountAll({
         where: whereCondition,
         limit,
         offset,
-        include: [{ model: Category }],
         order: [[sort, order.toUpperCase()]],
+        include: [{ model: Category }],
         attributes: {
           exclude: ['categoryId'],
         },

@@ -43,6 +43,7 @@ export class ProductsController {
     });
   }
 
+  // В ProductsController
   @Get()
   @ApiQuery({
     name: 'page',
@@ -63,6 +64,12 @@ export class ProductsController {
     description: 'Filter by category ID',
   })
   @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Search by title or description',
+  })
+  @ApiQuery({
     name: 'sort',
     required: false,
     type: String,
@@ -79,6 +86,7 @@ export class ProductsController {
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
     @Query('categoryId') categoryId: number,
+    @Query('search') search: string,
     @Query('sort') sort: string = 'id',
     @Query('order') order: string = 'ASC',
   ) {
@@ -86,6 +94,7 @@ export class ProductsController {
       page,
       limit,
       categoryId,
+      search,
       sort,
       order,
     );
