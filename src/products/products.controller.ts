@@ -6,13 +6,22 @@ import {
   Body,
   Get,
   Query,
+  Param,
+  Put,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { File } from 'multer';
 import { FilesService } from '../files/files.service';
 import { ProductService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
-import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiConsumes,
+  ApiParam,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
+import { UpdateProductDto } from './dto/update-product.dto';
 
 @ApiTags('products')
 @Controller('products')
@@ -98,5 +107,35 @@ export class ProductsController {
       sort,
       order,
     );
+  }
+
+  @Put(':id')
+  @ApiConsumes('multipart/form-data')
+  @ApiParam({
+    name: 'id',
+    required: true,
+    description: 'Product ID',
+    type: Number,
+  })
+  @ApiBody({
+    description: 'Update an existing product with images',
+    type: UpdateProductDto, // You may need to define this DTO if it differs from CreateProductDto
+  })
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 5 }]))
+  async updateProduct(
+    @Param('id') id: number,
+    @UploadedFiles() files: { images?: File[] },
+    @Body() productData: UpdateProductDto,
+  ) {
+    const imageUrls = files.images
+      ? await Promise.all(
+          files.images.map((file) => this.filesService.uploadFile(file)),
+        )
+      : [];
+
+    return this.productService.updateProduct(id, {
+      ...productData,
+      images: imageUrls.map((item) => item.path),
+    });
   }
 }

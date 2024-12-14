@@ -4,6 +4,7 @@ import { Product } from './product.model';
 import { CreateProductDto } from './dto/create-product.dto';
 import { Category } from 'src/categories/category.model';
 import { Op } from 'sequelize';
+import { UpdateProductDto } from './dto/update-product.dto';
 
 @Injectable()
 export class ProductService {
@@ -31,6 +32,16 @@ export class ProductService {
 
     const product = await this.productRepository.create(dto);
     return product;
+  }
+
+  async updateProduct(id: number, dto: UpdateProductDto): Promise<Product> {
+    const product = await this.productRepository.findByPk(id);
+    if (!product) {
+      throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
+    }
+
+    const updatedProduct = await product.update(dto);
+    return updatedProduct;
   }
 
   async findAllProducts(
