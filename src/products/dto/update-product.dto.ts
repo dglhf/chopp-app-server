@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNumber, IsString, Min, IsArray, IsInt } from 'class-validator';
+import { FileModel } from 'src/files/file.model';
 
 export class UpdateProductDto {
   @ApiProperty({
@@ -46,6 +47,10 @@ export class UpdateProductDto {
       example: 'uuid1',
     },
   })
-  @IsArray()
-  images: string[];
+  @ApiProperty({
+    description: 'initialImages:FilesModel[] array stringified FilesModel',
+    example: 'FilesModel',
+  })
+  @IsString()
+  initialImages: string;
 }

@@ -1,16 +1,19 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MulterModule } from '@nestjs/platform-express';
 import { FilesService } from './files.service';
 import { FilesController } from './files.controller';
 import { FileModel } from './file.model';
 import { SequelizeModule } from '@nestjs/sequelize';
+import { Product } from 'src/products/product.model';
+import { ProductsModule } from 'src/products/products.module';
 
 @Module({
   imports: [
     MulterModule.register({
       dest: './uploads',
     }),
-    SequelizeModule.forFeature([FileModel]),
+    SequelizeModule.forFeature([FileModel, Product]),
+    forwardRef(() => ProductsModule),
   ],
   controllers: [FilesController],
   providers: [FilesService],

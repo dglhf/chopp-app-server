@@ -32,13 +32,24 @@ export class CreateProductDto {
   categoryId: number;
 
   @ApiProperty({
-    description: 'Product images',
+    description: 'IDs of product images',
     type: 'array',
     items: {
-      type: 'string',
-      example: 'uuid1',
+      type: 'number',
+      example: 1,
     },
   })
   @IsArray()
-  images: string[];
+  imageIds: number[];
+
+  // @ApiProperty({
+  //   description: 'IDs of product images',
+  //   type: 'array',
+  //   items: {
+  //     type: 'number',
+  //     example: 1,
+  //   },
+  // })
+  @IsArray()
+  imagesOrder: number[];
 }

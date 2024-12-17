@@ -17,6 +17,8 @@ import { FilesModule } from './files/files.module';
 import { Category } from './categories/category.model';
 import { Product } from './products/product.model';
 import { PricingConfig } from './pricing/pricing-config.model';
+import { FileModel } from './files/file.model';
+import { ProductFile } from './products/product-file.model';
 // import { join } from 'path';
 // import { ServeStaticModule } from '@nestjs/serve-static';
 
@@ -44,6 +46,8 @@ import { PricingConfig } from './pricing/pricing-config.model';
         Category,
         Product,
         PricingConfig,
+        FileModel,
+        ProductFile,
       ],
       autoLoadModels: true,
     }),

@@ -1,7 +1,25 @@
-import { Column, Model, Table, DataType } from 'sequelize-typescript';
+import {
+  Column,
+  Model,
+  Table,
+  DataType,
+  ForeignKey,
+  BelongsTo,
+  BelongsToMany,
+} from 'sequelize-typescript';
+import { ProductFile } from 'src/products/product-file.model';
+import { Product } from 'src/products/product.model';
 
 @Table({ tableName: 'files' })
 export class FileModel extends Model<FileModel> {
+  @Column({
+    type: DataType.INTEGER,
+    autoIncrement: true,
+    primaryKey: true,
+    allowNull: false,
+  })
+  id: number;
+
   @Column({
     type: DataType.STRING,
     unique: true,
@@ -26,4 +44,7 @@ export class FileModel extends Model<FileModel> {
     allowNull: false,
   })
   size: number;
+
+  @BelongsToMany(() => Product, () => ProductFile)
+  products: Product[];
 }
