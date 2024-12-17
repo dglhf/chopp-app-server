@@ -142,8 +142,8 @@ export class ProductsController {
     @Query('order') order: string = 'ASC',
   ) {
     return this.productService.findAllProducts(
-      pageNumber,
-      limit,
+      Number(pageNumber),
+      Number(limit),
       categoryId,
       search,
       sort,
