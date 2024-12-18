@@ -5,6 +5,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { Category } from 'src/categories/category.model';
 import { Op } from 'sequelize';
 import { FileModel } from 'src/files/file.model';
+import { UpdateProductDto } from './dto/update-product.dto';
 
 @Injectable()
 export class ProductService {
@@ -52,15 +53,37 @@ export class ProductService {
     });
   }
 
-  // async updateProduct(id: number, dto: UpdateProductDto): Promise<Product> {
-  //   const product = await this.productRepository.findByPk(id);
-  //   if (!product) {
-  //     throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
-  //   }
+  async updateProduct(dto: UpdateProductDto): Promise<Product> {
+    const existingProduct = await this.productRepository.findOne({
+      where: { id: dto.id },
+    });
 
-  //   const updatedProduct = await product.update(dto);
-  //   return updatedProduct;
-  // }
+    existingProduct.update({
+      title: dto.title,
+      description: dto.description,
+      price: dto.price,
+      categoryId: dto.categoryId,
+      imagesOrder: dto.imageIds,
+    });
+
+    // Связать изображения с продуктом
+    if (dto.imageIds && dto.imageIds.length > 0) {
+      await existingProduct.$set('images', dto.imageIds);
+    }
+
+    return this.productRepository.findByPk(existingProduct.id, {
+      include: [
+        {
+          model: FileModel,
+          through: { attributes: [] }, // Опционально: не включать атрибуты из промежуточной таблицы
+        },
+        Category,
+      ],
+      attributes: {
+        exclude: ['categoryId'],
+      },
+    });
+  }
 
   async findAllProducts(
     pageNumber: number = 1,

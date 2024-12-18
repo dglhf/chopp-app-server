@@ -40,6 +40,17 @@ export class UpdateProductDto {
   categoryId: number;
 
   @ApiProperty({
+    description: 'IDs of product images',
+    type: 'array',
+    items: {
+      type: 'number',
+      example: 1,
+    },
+  })
+  @IsArray()
+  imageIds: number[];
+
+  @ApiProperty({
     description: 'Product images',
     type: 'array',
     items: {
@@ -51,6 +62,6 @@ export class UpdateProductDto {
     description: 'initialImages:FilesModel[] array stringified FilesModel',
     example: 'FilesModel',
   })
-  @IsString()
-  initialImages: string;
+  @IsArray()
+  initialImages: string[];
 }

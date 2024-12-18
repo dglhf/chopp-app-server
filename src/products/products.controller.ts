@@ -54,6 +54,64 @@ export class ProductsController {
     });
   }
 
+  @Put(':id')
+  @ApiConsumes('multipart/form-data') // Определяем тип контента, так как это загрузка файлов
+  @ApiBody({
+    description: 'Update product',
+    type: CreateProductDto,
+  })
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 5 }]))
+  async updateProduct(
+    @UploadedFiles() files: { images?: File[] },
+    @Body() productData: UpdateProductDto,
+    @Param() params,
+  ) {
+    const { id } = params;
+    console.log('params: ', params);
+    console.log('productData: ', productData);
+    const imageModels = await Promise.all(
+      files.images?.map((file) => this.filesService.uploadFile(file)) || [],
+    );
+
+    try {
+      let onlyNewUploadedImagesIds = [];
+      let initialImagesIds = [];
+
+      if (Array.isArray(productData.initialImages)) {
+        const initialImagesParsed = productData.initialImages.map((item) =>
+          JSON.parse(item),
+        );
+        console.log('initialImagesArr: ', initialImagesParsed);
+
+        const initialImagesHashSet = new Set(
+          initialImagesParsed.map((item) => item.hash),
+        );
+
+        onlyNewUploadedImagesIds = imageModels
+          .filter((item) => !initialImagesHashSet.has(item.hash))
+          .map((item) => item.id);
+        initialImagesIds = initialImagesParsed.map((item) => item.id);
+      } else {
+        const initialImage = JSON.parse(productData.initialImages);
+
+        onlyNewUploadedImagesIds = imageModels
+          .filter((item) => initialImage.hase !== item.hash)
+          .map((item) => item.id);
+        initialImagesIds = [initialImage.id];
+      }
+
+      console.log('[...initialImagesIds, ...onlyNewUploadedImagesIds]; ', [...initialImagesIds, ...onlyNewUploadedImagesIds])
+      return this.productService.updateProduct({
+        ...productData,
+        imageIds: [...initialImagesIds, ...onlyNewUploadedImagesIds],
+        id,
+      });
+    } catch (error) {
+      console.log('❌ updateProduct error: ', error);
+      throw new HttpException(error, HttpStatus.BAD_REQUEST);
+    }
+  }
+
   // @Put(':id')
   // @ApiConsumes('multipart/form-data')
   // @ApiParam({
