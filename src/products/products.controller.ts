@@ -100,7 +100,11 @@ export class ProductsController {
         initialImagesIds = [initialImage.id];
       }
 
-      console.log('[...initialImagesIds, ...onlyNewUploadedImagesIds]; ', [...initialImagesIds, ...onlyNewUploadedImagesIds])
+      console.log('[...initialImagesIds, ...onlyNewUploadedImagesIds]; ', [
+        ...initialImagesIds,
+        ...onlyNewUploadedImagesIds,
+      ]);
+
       return this.productService.updateProduct({
         ...productData,
         imageIds: [...initialImagesIds, ...onlyNewUploadedImagesIds],
