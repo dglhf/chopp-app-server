@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { Multer } from 'multer';
 import * as express from 'express';
 
 const DEFAULT_API_PREFIX = 'api';

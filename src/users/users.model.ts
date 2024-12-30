@@ -9,8 +9,8 @@ import {
 import { Role } from '../roles/roles.model';
 import { UserRoles } from 'src/roles/user-roles.model';
 import { UserRO } from './dto/create-user.dto';
-import { UserChats } from 'src/chats/user-chats.model';
-import { Chat } from 'src/chats/chats.model';
+import { Chat } from 'src/websockets/chats/chats.model';
+import { UserChats } from 'src/websockets/chats/user-chats.model';
 
 interface UserCreationAttrs {
   email: string;

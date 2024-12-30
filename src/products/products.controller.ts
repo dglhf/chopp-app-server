@@ -12,7 +12,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
-import { File } from 'multer';
+// import { File } from 'multer';
 import { FilesService } from '../files/files.service';
 import { ProductService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -41,7 +41,7 @@ export class ProductsController {
   })
   @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 5 }]))
   async createProduct(
-    @UploadedFiles() files: { images?: File[] },
+    @UploadedFiles() files: { images?: any[] },
     @Body() productData: CreateProductDto,
   ) {
     const imageUrls = await Promise.all(

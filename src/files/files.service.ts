@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { writeFile } from 'fs/promises';
 import * as path from 'path';
-import { File } from 'multer';
+// import { File } from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import { createHash } from 'crypto';
 import { FileModel } from './file.model';
@@ -26,7 +26,7 @@ export class FilesService {
     return createHash('sha256').update(buffer).digest('hex');
   }
 
-  async uploadFile(file: File): Promise<FileModel> {
+  async uploadFile(file: any): Promise<FileModel> {
     const fileHash = this.computeHash(file.buffer);
 
     //Потенциально узкое горлышко, поиск по записям файлов

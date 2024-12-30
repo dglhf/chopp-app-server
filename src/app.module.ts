@@ -7,9 +7,6 @@ import { RolesModule } from './roles/roles.module';
 import { Role } from './roles/roles.model';
 import { UserRoles } from './roles/user-roles.model';
 import { AuthModule } from './auth/auth.module';
-import { ChatsModule } from './chats/chats.module';
-import { UserChats } from './chats/user-chats.model';
-import { Chat } from './chats/chats.model';
 import { CategoriesModule } from './categories/categories.module';
 import { PricingModule } from './pricing/pricing.module';
 import { ProductsModule } from './products/products.module';
@@ -19,8 +16,9 @@ import { Product } from './products/product.model';
 import { PricingConfig } from './pricing/pricing-config.model';
 import { FileModel } from './files/file.model';
 import { ProductFile } from './products/product-file.model';
-// import { join } from 'path';
-// import { ServeStaticModule } from '@nestjs/serve-static';
+import { WebsocketsModule } from './websockets/websockets.module';
+import { Chat } from './websockets/chats/chats.model';
+import { UserChats } from './websockets/chats/user-chats.model';
 
 @Module({
   imports: [
@@ -54,7 +52,8 @@ import { ProductFile } from './products/product-file.model';
     UsersModule,
     RolesModule,
     AuthModule,
-    ChatsModule,
+    // ChatsModule,
+    WebsocketsModule,
     CategoriesModule,
     PricingModule,
     ProductsModule,

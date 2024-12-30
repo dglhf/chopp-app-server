@@ -45,24 +45,24 @@ export class ChatService {
 
   async sendMessage(chatId: number, userId: number, message: string) {
     const chat = await this.chatModel.findOne({
-        where: { id: chatId },
-        include: [{ model: User }],
-      });
-  
-      if (!chat) {
-        throw new Error('Chat not found.');
-      }
-  
-      const user = chat.users.find((user) => user.id === userId);
-      if (!user) {
-        throw new Error('User is not a participant of this chat.');
-      }
+      where: { id: chatId },
+      include: [{ model: User }],
+    });
 
-      return {
-        message: 'Message sent successfully',
-        chatId: chat.id,
-        userId,
-        content: message,
-      };
+    if (!chat) {
+      throw new Error('Chat not found.');
+    }
+
+    const user = chat.users.find((user) => user.id === userId);
+    if (!user) {
+      throw new Error('User is not a participant of this chat.');
+    }
+
+    return {
+      message: 'Message sent successfully',
+      chatId: chat.id,
+      userId,
+      content: message,
+    };
   }
 }
