@@ -1,8 +1,10 @@
 ## Project setup
 
 ```bash
-$ npm install
+$ npm ci
 ```
+
+Do not use npm install, need install dependencies stict to package-lock.json file, vulnerabilities fix
 
 ## Compile and run the project
 
