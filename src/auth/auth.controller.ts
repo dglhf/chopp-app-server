@@ -1,9 +1,12 @@
-import { Body, Controller, Post, Req, Res } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CreateUserDto } from 'src/users/dto/create-user.dto';
 import { AuthService } from './auth.service';
 import { expireParseByHours } from 'src/shared/utils';
 import { AuthDto, RefreshDto } from './dto/auth.dto';
+import { RolesGuard } from 'src/auth/roles-auth.guard';
+import { Roles } from 'src/auth/roles-auth.decorator';
+import { User } from 'src/users/users.model';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -11,6 +14,22 @@ export class AuthController {
   constructor(private authService: AuthService) {}
   @Post('/login')
   async login(@Body() authDto: AuthDto, @Res({ passthrough: true }) response) {
+    const data = await this.authService.login(authDto);
+    response.cookie('refreshToken', data.refreshToken, {
+      maxAge: expireParseByHours(process.env.JWT_REFRESH_EXPIRATION),
+      httpOnly: true,
+    });
+    return data;
+  }
+
+  @ApiOperation({
+    summary: 'Use phone number or email, password for login',
+  })
+  @ApiResponse({ status: 200, type: [User] })
+  @Roles('ADMIN')
+  @UseGuards(RolesGuard)
+  @Post('/adminLogin')
+  async adminLogin(@Body() authDto: AuthDto, @Res({ passthrough: true }) response) {
     const data = await this.authService.login(authDto);
     response.cookie('refreshToken', data.refreshToken, {
       maxAge: expireParseByHours(process.env.JWT_REFRESH_EXPIRATION),
