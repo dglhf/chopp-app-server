@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNumber, IsString, Min, IsArray, IsInt } from 'class-validator';
-import { FileModel } from 'src/files/file.model';
 
 export class UpdateProductDto {
   @ApiProperty({

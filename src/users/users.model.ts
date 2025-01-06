@@ -1,8 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  BelongsTo,
   BelongsToMany,
   Column,
   DataType,
+  HasOne,
   Model,
   Table,
 } from 'sequelize-typescript';
@@ -11,6 +13,7 @@ import { UserRoles } from 'src/roles/user-roles.model';
 import { UserRO } from './dto/create-user.dto';
 import { Chat } from 'src/websockets/chats/chats.model';
 import { UserChats } from 'src/websockets/chats/user-chats.model';
+import { ShoppingCart } from 'src/shopping-card/shopping-cart.model';
 
 interface UserCreationAttrs {
   email: string;
@@ -54,6 +57,9 @@ export class User extends Model<User, UserCreationAttrs> {
 
   @BelongsToMany(() => Chat, () => UserChats)
   chats: Chat[];
+
+  @HasOne(() => ShoppingCart)
+  shoppingCart: ShoppingCart
 
   sanitizeUser(): UserRO {
     const responseObject: UserRO = { ...this };
