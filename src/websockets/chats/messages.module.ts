@@ -9,24 +9,21 @@ import { UsersModule } from 'src/users/users.module';
 import { User } from 'src/users/users.model';
 import { ActiveSessionModule } from '../active-sessions/active-session.module';
 import { WebsocketsModule } from '../websockets.module';
-import { ChatMessages } from './chat-messages.model';
+import { MessagesService } from './messages.service';
 import { Message } from './messages.model';
-import { ChatsController } from './chats.controller';
-import { MessagesModule } from './messages.module';
-import { AuthModule } from 'src/auth/auth.module';
+import { ChatMessages } from './chat-messages.model';
+import { ChatsModule } from './chats.module';
 
 @Module({
-  controllers: [ChatsController],
-  providers: [ChatsGateway, ChatsService],
   imports: [
-    SequelizeModule.forFeature([User, Chat, UserChats, Message, ChatMessages]),
+    SequelizeModule.forFeature([User, Chat, Message, UserChats, ChatMessages]),
     RolesModule,
     UsersModule,
     ActiveSessionModule,
-    AuthModule,
     WebsocketsModule,
-    forwardRef(() => MessagesModule),
+    forwardRef(() => ChatsModule),
   ],
-  exports: [ChatsService],
+  providers: [MessagesService, ChatsService],
+  exports: [MessagesService],
 })
-export class ChatsModule {}
+export class MessagesModule {}

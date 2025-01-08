@@ -1,13 +1,13 @@
 import { CanActivate, ExecutionContext, HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { JwtService } from '@nestjs/jwt';
 import { Observable } from 'rxjs';
 import { ROLES_KEY } from './roles-auth.decorator';
+import { AuthService } from './auth.service';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
     constructor(
-        private jwtService: JwtService,
+        private authService: AuthService,
         private reflector: Reflector,
     ) {}
 
@@ -22,19 +22,25 @@ export class RolesGuard implements CanActivate {
         }
 
         const req = context.switchToHttp().getRequest();
+
+        const authHeader = req.headers.authorization;
+
+        const [bearer, token] = authHeader.split(' ');
+
+        if (bearer !== 'Bearer' || !token) {
+            throw new UnauthorizedException({ message: 'User is not authorized' });
+        }
+
+
+        const user = this.authService.verifyToken(token, process.env.JWT_ACCESS_SECRET_HEX);
+
+        if (!user) {
+            throw new UnauthorizedException({ message: 'User is not authorized' });
+        }
+
+        req.user = user;
+
         try {
-            const authHeader = req.headers.authorization;
-
-            const [bearer, token] = authHeader.split(' ');
-
-            if (bearer !== 'Bearer' || !token) {
-                throw new UnauthorizedException({ message: 'User is not authorized' });
-            }
-
-            const user = this.jwtService.verify(token);
-
-            req.user = user;
-
             return user.roles.some((role) => requiredRoles.includes(role.value));
         } catch (e) {
             throw new HttpException('Access denied for this role', HttpStatus.FORBIDDEN);
