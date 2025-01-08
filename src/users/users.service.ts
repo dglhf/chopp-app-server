@@ -144,6 +144,8 @@ export class UsersService {
   ) {
     const offset = (page - 1) * limit;
 
+    const sortParam = sort === 'date' ? 'createdAt' : sort;
+
     const where = search
       ? {
           [Op.or]: [
@@ -159,7 +161,7 @@ export class UsersService {
         where,
         limit: +limit,
         offset,
-        order: [[sort, order.toUpperCase()]],
+        order: sort ? [[sortParam, order.toUpperCase()]] : [],
         include: { all: true },
         attributes: { exclude: ['password'] },
       });
@@ -167,8 +169,8 @@ export class UsersService {
     const totalPages = Math.ceil(totalUsers / limit);
 
     return {
-      users,
-      totalUsers,
+      items: users,
+      totalRecords: totalUsers,
       totalPages,
       page: Number(page),
     };

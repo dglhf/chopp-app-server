@@ -22,6 +22,10 @@ import { UserChats } from './websockets/chats/user-chats.model';
 import { ShoppingCartModule } from './shopping-card/shopping-cart.module';
 import { ShoppingCart } from './shopping-card/shopping-cart.model';
 import { ShoppingCartItem } from './shopping-card/shopping-cart-item.model';
+import { ChatMessages } from './websockets/chats/chat-messages.model';
+import { Message } from './websockets/chats/messages.model';
+import { ChatsModule } from './websockets/chats/chats.module';
+import { MessagesModule } from './websockets/chats/messages.module';
 
 @Module({
   imports: [
@@ -42,8 +46,10 @@ import { ShoppingCartItem } from './shopping-card/shopping-cart-item.model';
         User,
         Role,
         Chat,
+        Message,
         UserRoles,
         UserChats,
+        ChatMessages,
         Category,
         Product,
         PricingConfig,
@@ -57,7 +63,8 @@ import { ShoppingCartItem } from './shopping-card/shopping-cart-item.model';
     UsersModule,
     RolesModule,
     AuthModule,
-    // ChatsModule,
+    ChatsModule,
+    MessagesModule,
     WebsocketsModule,
     CategoriesModule,
     PricingModule,
