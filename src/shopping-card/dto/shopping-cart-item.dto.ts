@@ -15,7 +15,4 @@ export class ShoppingCartItemDto {
     description: 'Quantity of the product in the cart',
   })
   quantity: number;
-
-//   @ApiProperty({ example: 1500, description: 'Total price for the product' })
-//   totalPrice: number;
 }
