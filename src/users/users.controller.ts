@@ -86,8 +86,19 @@ export class UsersController {
     @Query('search') search = '',
     @Query('sort') sort = 'fullName',
     @Query('order') order = 'asc',
+    // default getting all users without requester, need add check by boolean type
+    @Query('isRequesterIncluded') isRequesterIncluded = false,
+    @Headers() headers,
   ) {
-    return this.usersService.getAllUsers(page, limit, search, sort, order);
+    const authHeader = headers.authorization;
+    const accessToken = authHeader.split(' ')[1];
+
+    const payload = this.authService.verifyToken(
+      accessToken,
+      process.env.JWT_ACCESS_SECRET_HEX,
+    );
+
+    return this.usersService.getAllUsers(page, limit, search, sort, order, isRequesterIncluded, payload.id);
   }
 
   @ApiOperation({ summary: 'Getting current user' })

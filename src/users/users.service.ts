@@ -141,20 +141,29 @@ export class UsersService {
     search = '',
     sort = 'fullName',
     order = 'asc',
+    // TODO: can be changed to users only from private room,
+    // because it was list of users under ADMIN
+    isRequesterIncluded = false,
+    requesterId = null,
   ) {
+    try {
     const offset = (page - 1) * limit;
 
     const sortParam = sort === 'date' ? 'createdAt' : sort;
 
-    const where = search
-      ? {
-          [Op.or]: [
-            { fullName: { [Op.iLike]: `%${search}%` } },
-            { email: { [Op.iLike]: `%${search}%` } },
-            { phoneNumber: { [Op.iLike]: `%${search}%` } },
-          ],
-        }
-      : {};
+    const where = {
+      ...(search && {
+        [Op.or]: [
+          { fullName: { [Op.iLike]: `%${search}%` } },
+          { email: { [Op.iLike]: `%${search}%` } },
+          { phoneNumber: { [Op.iLike]: `%${search}%` } },
+        ],
+      }),
+      ...(!isRequesterIncluded && {
+        id: {
+        [Op.ne]: requesterId, // exclude user who makes request
+      }}),
+    };
 
     const { rows: users, count: totalUsers } =
       await this.userRepository.findAndCountAll({
@@ -174,6 +183,12 @@ export class UsersService {
       totalPages,
       page: Number(page),
     };
+    } catch (e) {
+      throw new HttpException(
+        'Params is not correct',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
   }
 
   async getUserByFieldName(
@@ -184,12 +199,6 @@ export class UsersService {
     const where = {
       [fieldName]: fieldValue,
     };
-
-    /* 
-            include: { all: true } для поиска всех значений,
-            в том числе по ForeignKey в промежуточной базе данных
-            в данном случае ролей
-        */
 
     const user = await this.userRepository.findOne({
       where,

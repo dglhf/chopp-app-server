@@ -1,16 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { User } from 'src/users/users.model';
-import { UsersService } from 'src/users/users.service';
 import { Message } from './messages.model';
-import { CreateMessageDto } from './dto/create-message.dto';
 
 @Injectable()
 export class MessagesService {
   constructor(
     @InjectModel(Message)
     private messageRepository: typeof Message,
-    private usersService: UsersService,
   ) {}
 
   async createMessage(message: Message, userId: number) {
@@ -21,6 +17,13 @@ export class MessagesService {
     await newMessage.$set('senderId', userId);
 
     return newMessage;
+  }
+
+  async getAllChatMessages(chatId: number) {
+    return await this.messageRepository.findAll({
+      where: { chatId },
+      include: { all: true },
+    });
   }
 
   // async sendMessage(chatId: number, userId: number, message: string) {

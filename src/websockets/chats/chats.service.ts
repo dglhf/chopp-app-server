@@ -3,9 +3,10 @@ import { InjectModel } from '@nestjs/sequelize';
 import { User } from 'src/users/users.model';
 import { Chat } from './chats.model';
 import { UsersService } from 'src/users/users.service';
-import { RolesService } from 'src/roles/roles.service';
 import { Message } from './messages.model';
 import { MessagesService } from './messages.service';
+import { ActiveSessionService } from '../active-sessions/active-session.service';
+import { Sequelize } from 'sequelize';
 
 @Injectable()
 export class ChatsService {
@@ -14,6 +15,7 @@ export class ChatsService {
     private chatRepository: typeof Chat,
     private usersService: UsersService,
     private messagesService: MessagesService,
+    private activeSessionService: ActiveSessionService,
   ) {}
 
   // Getting chat history
@@ -41,24 +43,29 @@ export class ChatsService {
     }
   }
 
-  async handleMessage(message: Message, userId: number) {
+  async handleMessage(message: Message, userId: number, chatId: number) {
     const user = await this.usersService.getUserByFieldName(userId, 'id');
 
     if (!user) {
       throw new Error('User not found.');
     }
 
-    const isNotAdmin = user.roles.some((role) => role.value === 'USER');
+    const isAdmin = user.roles.some((role) => role.value === 'ADMIN');
 
     /* 
       "User" role has only 1 chat, "Admin" - several, handler of 3 options:
       1. User is not admin, but sent the message and need create new chat.
       2. Chat already exist and need add message to user's chat if "User" role.
       3. If "Admin" sent the message, that's mean, that chat is already exist
+      (because Admin can see the chat after User creating or he can create Chat without any messages)
       and need find the chat and add the message.
     */
 
-    if (!user.chats.length && isNotAdmin) {
+    const isUserFirstMessage = !user.chats.length && !isAdmin;
+    const isUserAddMessageToExistChat = user.chats.length && !isAdmin;
+    const isAdminAddMessageToExistChat = isAdmin;
+
+    if (isUserFirstMessage) {
       // in createMessage will created message with sender id
       const newMessage = await this.messagesService.createMessage(message, userId);
       // in createChat will created chat with ownerId and connected with user
@@ -66,7 +73,7 @@ export class ChatsService {
 
       newMessage.$set('chatId', newChat.id);
       newChat.$add('messages', newMessage);
-    } else if (user.chats.length && isNotAdmin) {
+    } else if (isUserAddMessageToExistChat) {
       const userChatId = user.chats[0].id;
       const userChat = await this.chatRepository.findByPk(userChatId);
 
@@ -74,11 +81,25 @@ export class ChatsService {
 
       newMessage.$set('chatId', userChat.id);
       userChat.$add('messages', newMessage);
+
+      // broadcast message to users
+      const recipients = userChat.users.filter((recipient) => recipient.id !== user.id).map((recipient) => recipient.id);
+      this.broadcastMessagesToChatUsers(recipients);
+    } else if (isAdminAddMessageToExistChat) {
+      const userChat = await this.chatRepository.findByPk(chatId);
+
+      const newMessage = await this.messagesService.createMessage(message, userId);
+
+      newMessage.$set('chatId', userChat.id);
+      userChat.$add('messages', newMessage);
+      
+      // broadcast message to users
+      const recipients = userChat.users
+        .filter((recipient) => recipient.id !== user.id)
+        .map((recipient) => recipient.id);
+      this.broadcastMessagesToChatUsers(recipients);
     } else {
-      /* 
-        todo: need handler for adding message to chat from admin,
-        because admin has a lot of chats, need additional sign of current chat in message meta
-      */
+      console.log('--------- handle message unexpected case --------');
     }
   }
 
@@ -90,30 +111,69 @@ export class ChatsService {
     return newChat;
   }
 
-  async sendMessage(chatId: number, userId: number, message: string) {
-    const chat = await this.chatRepository.findOne({
-      where: { id: chatId },
-      include: [{ model: User }],
-    });
+  // argument users - users exclude sender
+  async broadcastMessagesToChatUsers(userIds: number[]) {
+    const sessions = await this.activeSessionService.getSessionsByUserIds(userIds);
 
-    if (!chat) {
-      throw new Error('Chat not found.');
+    if (!sessions.length) {
+      console.log('---------- no active sessions available ----------');
     }
 
-    const user = chat.users.find((user) => user.id === userId);
-    if (!user) {
-      throw new Error('User is not a participant of this chat.');
-    }
+    const sids = sessions.map((session) => session.sid);
 
-    return {
-      message: 'Message sent successfully',
-      chatId: chat.id,
-      userId,
-      content: message,
-    };
+    // need update broadcast
+    // sids.forEach((recipientSocketId) => {
+    //   if (recipientSocketId) {
+    //     socket.to(recipientSocketId).emit('broadcast_message', {
+    //       senderId,
+    //       message,
+    //     });
+    //   }
+    // });
   }
 
-  async getAllChats() {
-    return await this.chatRepository.findAll({ include: 'all' });
+  async getAllChats(currentUserId: number) {
+    const chats = await this.chatRepository.findAll({
+      include: [
+        {
+          association: 'users',
+          attributes: ['id', 'fullName'],
+          through: { // delete throught UserChats table result
+            attributes: [],
+          },
+        },
+        // TODO: delete it and use only for testing
+        {
+          association: 'messages',
+          attributes: ['id', 'text', 'wasReadBy', 'senderId', 'chatId', 'createdAt'],
+        },
+      ],
+      attributes: {
+        include: [
+          [
+            Sequelize.literal(`(
+              SELECT "text"
+              FROM "messages" AS "Message"
+              INNER JOIN "chat_messages" AS "ChatMessages"
+              ON "Message"."id" = "ChatMessages"."messageId"
+              WHERE "ChatMessages"."chatId" = "Chat"."id"
+              ORDER BY "Message"."createdAt" DESC
+              LIMIT 1
+            )`),
+            'lastMessage',
+          ],
+        ],
+      },
+    });
+
+    return chats.map((chat) => {
+      const users = chat.users || [];
+      const filteredUsers = users.filter((user: User) => user.id !== currentUserId);
+      const fullNames = filteredUsers.map((user: User) => user.fullName);
+      return {
+        ...chat.toJSON(),
+        fullName: fullNames.join(', '),
+      };
+    });
   }
 }

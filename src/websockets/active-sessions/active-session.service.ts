@@ -34,6 +34,17 @@ export class ActiveSessionService {
     return this.activeSessionModel.findOne({ where: { userId } });
   }
 
+  // Получение активных сессий по userIds[]
+  async getSessionsByUserIds(userIds: number[]): Promise<ActiveSession[]> {
+    return await this.activeSessionModel.findAll({
+      where: {
+        userId: {
+          [Op.in]: userIds,
+        },
+      },
+    });
+  }
+
   async cleanStaleSessions(): Promise<void> {
     const expirationTime = new Date(Date.now() - 3600 * 1000); // Например, 1 час
     await this.activeSessionModel.destroy({
