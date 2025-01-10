@@ -27,4 +27,7 @@ export class ShoppingCart extends Model<ShoppingCart> {
 
   @Column({type: DataType.FLOAT})
   totalPrice: number;
+
+  @Column({type: DataType.FLOAT})
+  quantity: number;
 }
