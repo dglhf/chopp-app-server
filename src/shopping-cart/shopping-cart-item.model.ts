@@ -8,6 +8,7 @@ import {
 } from 'sequelize-typescript';
 import { ShoppingCart } from './shopping-cart.model';
 import { Product } from 'src/products/product.model';
+import { Order } from 'src/order/order.model';
 
 @Table({ tableName: 'shopping_cart_items' })
 export class ShoppingCartItem extends Model<ShoppingCartItem> {
@@ -37,6 +38,13 @@ export class ShoppingCartItem extends Model<ShoppingCartItem> {
 
   @BelongsTo(() => ShoppingCart)
   shoppingCart: ShoppingCart;
+
+  @ForeignKey(() => Order)
+  @Column({ type: DataType.INTEGER })
+  orderId: number;
+
+  @BelongsTo(() => Order)
+  order: Order;
 
   @Column({
     type: DataType.INTEGER,

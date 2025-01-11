@@ -21,7 +21,7 @@ import { RolesGuard } from 'src/auth/roles-auth.guard';
 @ApiTags('shopping-cart')
 @ApiBearerAuth()
 @Controller('shopping-cart')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)
 export class ShoppingCartController {
   constructor(private readonly shoppingCartService: ShoppingCartService) {}
 

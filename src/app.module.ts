@@ -19,13 +19,16 @@ import { ProductFile } from './products/product-file.model';
 import { WebsocketsModule } from './websockets/websockets.module';
 import { Chat } from './websockets/chats/chats.model';
 import { UserChats } from './websockets/chats/user-chats.model';
-import { ShoppingCartModule } from './shopping-card/shopping-cart.module';
-import { ShoppingCart } from './shopping-card/shopping-cart.model';
-import { ShoppingCartItem } from './shopping-card/shopping-cart-item.model';
+import { ShoppingCartModule } from './shopping-cart/shopping-cart.module';
+import { ShoppingCart } from './shopping-cart/shopping-cart.model';
+import { ShoppingCartItem } from './shopping-cart/shopping-cart-item.model';
 import { ChatMessages } from './websockets/chats/chat-messages.model';
 import { Message } from './websockets/chats/messages.model';
 import { ChatsModule } from './websockets/chats/chats.module';
 import { MessagesModule } from './websockets/chats/messages.module';
+import { OrderModule } from './order/order.module';
+import { Order } from './order/order.model';
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
   imports: [
@@ -56,7 +59,8 @@ import { MessagesModule } from './websockets/chats/messages.module';
         FileModel,
         ProductFile,
         ShoppingCart,
-        ShoppingCartItem
+        ShoppingCartItem,
+        Order
       ],
       autoLoadModels: true,
     }),
@@ -70,7 +74,9 @@ import { MessagesModule } from './websockets/chats/messages.module';
     PricingModule,
     ProductsModule,
     FilesModule,
-    ShoppingCartModule
+    ShoppingCartModule,
+    OrderModule,
+    PaymentModule
   ],
   controllers: [],
   providers: [],

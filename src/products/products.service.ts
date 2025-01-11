@@ -12,6 +12,7 @@ export class ProductService {
   constructor(
     @InjectModel(Product) private productRepository: typeof Product,
     @InjectModel(FileModel) private fileRepository: typeof FileModel,
+    
   ) {}
 
   async createProduct(dto: CreateProductDto): Promise<Product> {
