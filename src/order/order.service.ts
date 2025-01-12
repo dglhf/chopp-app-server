@@ -4,7 +4,7 @@ import { Order } from './order.model';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { ORDER_STATUS, PAYMENT_STATUS } from 'src/shared/enums';
 import { PaymentService } from 'src/payment/payment.service';
-import { OrderResponseDto } from './dto/order-responce.dto copy';
+import { CreateOrderResponseDto } from './dto/create-order-response.dto copy';
 import { ShoppingCartItem } from 'src/shopping-cart/shopping-cart-item.model';
 
 @Injectable()
@@ -18,11 +18,9 @@ export class OrderService {
   async createOrder(
     userId: number,
     createOrderDto: CreateOrderDto,
-  ): Promise<OrderResponseDto> {
+  ): Promise<CreateOrderResponseDto> {
     const transaction = await this.orderModel.sequelize.transaction();
 
-    console.log('--userId--', userId)
-    console.log('--createOrderDto--', createOrderDto)
     try {
       // Создание заказа без элементов
       const order = await this.orderModel.create({
@@ -32,8 +30,6 @@ export class OrderService {
         orderStatus: ORDER_STATUS.PENDING,
         paymentStatus: PAYMENT_STATUS.PENDING,
       }, { transaction });
-
-      console.log('--order--', order)
 
       // Добавление элементов заказа
       await Promise.all(createOrderDto.items.map(itemDto =>
@@ -51,8 +47,6 @@ export class OrderService {
         description: `Payment for order ${order.id}`,
       });
 
-      console.log('--paymentResult--', paymentResult)
-
       // Обновление данных заказа
       order.transactionId = paymentResult.id;
       order.paymentStatus = PAYMENT_STATUS.PENDING;
@@ -69,9 +63,8 @@ export class OrderService {
         paymentStatus: order.paymentStatus,
         transactionId: order.transactionId,
         paymentUrl: order.paymentUrl
-      } as OrderResponseDto; // Обеспечьте соответствие DTO
+      } as CreateOrderResponseDto;
     } catch (error) {
-      console.log('--error--', error)
       await transaction.rollback();
       throw new NotFoundException(`Failed to create order or initiate payment. ${String(error)}`);
     }

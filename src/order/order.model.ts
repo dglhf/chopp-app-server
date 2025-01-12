@@ -8,7 +8,6 @@ import {
   HasMany,
 } from 'sequelize-typescript';
 import { ShoppingCartItem } from 'src/shopping-cart/shopping-cart-item.model';
-import { ShoppingCart } from 'src/shopping-cart/shopping-cart.model';
 import { User } from 'src/users/users.model';
 
 @Table({ tableName: 'orders' })

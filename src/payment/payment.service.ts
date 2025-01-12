@@ -1,13 +1,15 @@
-import { Injectable, HttpException } from '@nestjs/common';
+import { Injectable, HttpException, NotFoundException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { randomBytes } from 'crypto';
-import { PAYMENT_URL } from './constants';
+import { YOOKASSA_URL } from './constants';
+import { CapturePaymentDto } from 'src/order/dto/capture-payment.dto';
+import { CreateRefundDto } from 'src/order/dto/create-refund.dto';
+import { GetRefundsResponseDto } from 'src/order/dto/get-refunds-response.dto';
+import { GetRefundResponseDto } from 'src/order/dto/get-refund-response.dto';
 
 @Injectable()
 export class PaymentService {
-  constructor(
-    private httpService: HttpService,
-  ) {}
+  constructor(private httpService: HttpService) {}
 
   async createPayment(orderDetails: any): Promise<any> {
     //TODO: YOOKASSA_SHOP_ID хранить в базе для каждого конкретного заказчика
@@ -19,7 +21,7 @@ export class PaymentService {
       Authorization: `Basic ${auth}`,
       'Content-Type': 'application/json',
       //TODO: разобраться с ключом идемпотентности
-      'Idempotence-Key': this.generateIdempotenceKey()
+      'Idempotence-Key': this.generateIdempotenceKey(),
     };
     const body = {
       amount: {
@@ -38,20 +40,215 @@ export class PaymentService {
 
     try {
       const response = await this.httpService
-        .post(PAYMENT_URL, body, { headers })
+        .post(`${YOOKASSA_URL}/payments`, body, { headers })
         .toPromise();
       return response.data;
     } catch (error) {
-      console.log('-------error', error.response)
-      throw new HttpException(
-        'Failed to initiate payment',
-        error.response.status,
+      throw new NotFoundException(
+        `Failed to initiate payment. ${String(error.response.data)}`,
+      );
+    }
+  }
+
+  async getPayments(params: {
+    limit?: number;
+    cursor?: string;
+    created_at_gte?: string;
+    created_at_gt?: string;
+    created_at_lte?: string;
+    created_at_lt?: string;
+    payment_id?: string;
+    status?: string;
+  }): Promise<any> {
+    const url = `${YOOKASSA_URL}/payments`;
+    const auth = Buffer.from(
+      `${process.env.YOOKASSA_SHOP_ID}:${process.env.YOOKASSA_SECRET_KEY}`,
+    ).toString('base64');
+    const headers = {
+      Authorization: `Basic ${auth}`,
+      'Content-Type': 'application/json',
+    };
+
+    try {
+      const response = await this.httpService
+        .get(url, {
+          headers,
+          params, // Передача фильтров как параметров запроса
+        })
+        .toPromise();
+      return response.data;
+    } catch (error) {
+      throw new NotFoundException(
+        `Failed to retrieve payments. ${String(error.response.data)}`,
+      );
+    }
+  }
+
+  async getPaymentById(paymentId: string): Promise<any> {
+    const shopId = process.env.YOOKASSA_SHOP_ID;
+    const secretKey = process.env.YOOKASSA_SECRET_KEY;
+    const auth = Buffer.from(`${shopId}:${secretKey}`).toString('base64');
+
+    try {
+      const response = await this.httpService
+        .get(`${YOOKASSA_URL}/payments/${paymentId}`, {
+          headers: {
+            Authorization: `Basic ${auth}`,
+            'Content-Type': 'application/json',
+          },
+        })
+        .toPromise();
+
+      return response.data;
+    } catch (error) {
+      throw new NotFoundException(
+        `Payment with ID ${paymentId} not found. ${String(error.response.data)}`,
+      );
+    }
+  }
+
+  async capturePayment(
+    paymentId: string,
+    captureData?: CapturePaymentDto,
+  ): Promise<any> {
+    //TODO: YOOKASSA_SHOP_ID хранить в базе для каждого конкретного заказчика
+    const shopId = process.env.YOOKASSA_SHOP_ID;
+    const secretKey = process.env.YOOKASSA_SECRET_KEY;
+    const auth = Buffer.from(`${shopId}:${secretKey}`).toString('base64');
+
+    try {
+      const response = await this.httpService
+        .post(`${YOOKASSA_URL}/payments/${paymentId}/capture`, captureData, {
+          headers: {
+            Authorization: `Basic ${auth}`,
+            'Content-Type': 'application/json',
+          },
+        })
+        .toPromise();
+
+      return response.data;
+    } catch (error) {
+      throw new NotFoundException(
+        `Failed to capture payment: ${paymentId}. ${String(error.response.data)}`,
+      );
+    }
+  }
+
+  async cancelPayment(paymentId: string): Promise<any> {
+    //TODO: YOOKASSA_SHOP_ID хранить в базе для каждого конкретного заказчика
+    const shopId = process.env.YOOKASSA_SHOP_ID;
+    const secretKey = process.env.YOOKASSA_SECRET_KEY;
+    const auth = Buffer.from(`${shopId}:${secretKey}`).toString('base64');
+
+    try {
+      const response = await this.httpService
+        .post(
+          `${YOOKASSA_URL}/payments/${paymentId}/cancel`,
+          {},
+          {
+            headers: {
+              Authorization: `Basic ${auth}`,
+              'Content-Type': 'application/json',
+            },
+          },
+        )
+        .toPromise();
+
+      return response.data;
+    } catch (error) {
+      throw new NotFoundException(
+        `Failed to cancel payment. ${String(error.response.data)}`,
+      );
+    }
+  }
+
+  async createRefund(refundData: CreateRefundDto): Promise<any> {
+    //TODO: YOOKASSA_SHOP_ID хранить в базе для каждого конкретного заказчика
+    const shopId = process.env.YOOKASSA_SHOP_ID;
+    const secretKey = process.env.YOOKASSA_SECRET_KEY;
+    const auth = Buffer.from(`${shopId}:${secretKey}`).toString('base64');
+
+    try {
+      const response = await this.httpService
+        .post(`${YOOKASSA_URL}/refunds`, refundData, {
+          headers: {
+            Authorization: `Basic ${auth}`,
+            'Content-Type': 'application/json',
+            //TODO: разобраться с ключом идемпотентности
+            'Idempotence-Key': this.generateIdempotenceKey(),
+          },
+        })
+        .toPromise();
+
+      return response.data;
+    } catch (error) {
+      console.log('error: ', error.response.data);
+      throw new NotFoundException(
+        `Failed to refund payment ${refundData.payment_id}. ${String(error.response.data)}`,
+      );
+    }
+  }
+
+  async getRefunds(params: {
+    limit?: number;
+    cursor?: string;
+    created_at_gte?: string;
+    created_at_gt?: string;
+    created_at_lte?: string;
+    created_at_lt?: string;
+    payment_id?: string;
+    status?: string;
+  }): Promise<any> {
+    const url = `${YOOKASSA_URL}/refunds`;
+    const auth = Buffer.from(
+      `${process.env.YOOKASSA_SHOP_ID}:${process.env.YOOKASSA_SECRET_KEY}`,
+    ).toString('base64');
+    const headers = {
+      Authorization: `Basic ${auth}`,
+      'Content-Type': 'application/json',
+    };
+
+    try {
+      const response = await this.httpService
+        .get(url, {
+          headers,
+          params, // Передача фильтров как параметров запроса
+        })
+        .toPromise();
+      return response.data;
+    } catch (error) {
+      throw new NotFoundException(
+        `Failed to retrieve refunds. ${String(error.response.data)}`,
+      );
+    }
+  }
+
+  async getRefundById(refundId: string): Promise<GetRefundResponseDto> {
+    //TODO: YOOKASSA_SHOP_ID хранить в базе для каждого конкретного заказчика
+    const shopId = process.env.YOOKASSA_SHOP_ID;
+    const secretKey = process.env.YOOKASSA_SECRET_KEY;
+    const auth = Buffer.from(`${shopId}:${secretKey}`).toString('base64');
+
+    try {
+      const response = await this.httpService
+        .get(`${YOOKASSA_URL}/refunds/${refundId}`, {
+          headers: {
+            Authorization: `Basic ${auth}`,
+            'Content-Type': 'application/json',
+          },
+        })
+        .toPromise();
+
+      return response.data;
+    } catch (error) {
+      throw new NotFoundException(
+        `Failed to retrieve refund with ID: ${refundId}. ${String(error.response.data)}`,
       );
     }
   }
 
   private generateIdempotenceKey(): string {
     // Генерация ключа идемпотентности, например, UUID
-    return randomBytes(16).toString("hex");
+    return randomBytes(16).toString('hex');
   }
 }

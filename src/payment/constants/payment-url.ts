@@ -1,1 +1,1 @@
-export const PAYMENT_URL = 'https://api.yookassa.ru/v3/payments'
+export const YOOKASSA_URL = 'https://api.yookassa.ru/v3'
