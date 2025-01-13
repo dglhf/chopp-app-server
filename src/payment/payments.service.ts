@@ -8,7 +8,7 @@ import { GetRefundsResponseDto } from 'src/order/dto/get-refunds-response.dto';
 import { GetRefundResponseDto } from 'src/order/dto/get-refund-response.dto';
 
 @Injectable()
-export class PaymentService {
+export class PaymentsService {
   constructor(private httpService: HttpService) {}
 
   async createPayment(orderDetails: any): Promise<any> {

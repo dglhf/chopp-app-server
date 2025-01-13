@@ -28,7 +28,7 @@ import { ChatsModule } from './websockets/chats/chats.module';
 import { MessagesModule } from './websockets/chats/messages.module';
 import { OrderModule } from './order/order.module';
 import { Order } from './order/order.model';
-import { PaymentModule } from './payment/payment.module';
+import { PaymentsModule } from './payment/payments.module';
 
 @Module({
   imports: [
@@ -76,7 +76,7 @@ import { PaymentModule } from './payment/payment.module';
     FilesModule,
     ShoppingCartModule,
     OrderModule,
-    PaymentModule
+    PaymentsModule
   ],
   controllers: [],
   providers: [],

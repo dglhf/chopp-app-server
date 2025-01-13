@@ -23,7 +23,6 @@ export class ShoppingCartItem extends Model<ShoppingCartItem> {
   @ForeignKey(() => Product)
   @Column({
     type: DataType.INTEGER,
-    unique: true,
   })
   productId: number;
 

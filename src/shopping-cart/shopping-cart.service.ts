@@ -77,8 +77,6 @@ export class ShoppingCartService implements OnModuleInit {
       totalPrice: item.quantity * item.product.price,
     }));
 
-    
-
     return { items, totalPrice: cart.totalPrice, quantity: cart.quantity };
   }
 
