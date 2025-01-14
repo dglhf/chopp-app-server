@@ -211,7 +211,7 @@ export class UsersService {
 
   async getAdmins() {
     return await this.userRepository.findAll({
-      attributes: ['id'], // Только id пользователей
+      attributes: ['id'],
       include: [
         {
           model: Role,

@@ -5,10 +5,10 @@ import { Chat } from './chats.model';
 import { UsersService } from 'src/users/users.service';
 import { Message } from './messages.model';
 import { MessagesService } from './messages.service';
-import { ActiveSessionService } from '../active-sessions/active-session.service';
 import { Sequelize } from 'sequelize';
 import { Socket } from 'socket.io';
-import { ActiveSocket } from 'src/shared/types';
+import { getActiveRecipientsIds } from 'src/shared/utils/chat-utils';
+import { ActiveSocket } from 'src/shared/types/ws';
 
 @Injectable()
 export class ChatsService {
@@ -17,7 +17,6 @@ export class ChatsService {
     private chatRepository: typeof Chat,
     private usersService: UsersService,
     private messagesService: MessagesService,
-    private activeSessionService: ActiveSessionService,
   ) {}
 
   // Getting chat history
@@ -39,10 +38,23 @@ export class ChatsService {
 
     if (chat && user) {
       await chat.$add('users', user);
-      console.log('!!!!!!-----: Пользователь добавлен в чат');
+      console.log('!!!!!!-----: User added to chat');
     } else {
-      console.log('!!!!!!-----:  Чат или пользователь не найдены');
+      console.log('!!!!!!-----: Chat or user not found');
     }
+  }
+
+  async getChatWithIncludedUsers(userChatId: number) {
+    return await this.chatRepository.findByPk(userChatId, {
+      include: [
+        {
+          model: User,
+          // where: { id: specificUserId }, // could be exclude here by senderId
+          // TODO: need resolve case with several roles before
+          through: { attributes: [] }, // Could be exceptions here
+        },
+      ],
+    });
   }
 
   async handleMessage(socket: Socket, activeSessions: ActiveSocket[], message: Message, senderId: number) {
@@ -63,9 +75,16 @@ export class ChatsService {
       and need find the chat and add the message.
     */
 
+    // message create from USER app first
     const isUserFirstMessage = !user.chats.length && !isAdmin;
+
+    // USER sent message after his first message
     const isUserAddMessageToExistChat = user.chats.length && !isAdmin;
+
+    // ADMIN answer to message in his chat with USER, which he not create
     const isAdminFirstMessageToExistChat = user.chats.length < 2 && isAdmin;
+
+    // ADMIN sent message to exist chat - first message if ADMIN created, or second if USER created
     const isAdminAddMessageToExistChat = user.chats.length >= 2 && isAdmin;
 
     if (isUserFirstMessage) {
@@ -78,8 +97,8 @@ export class ChatsService {
       await newMessage.update({ chatId: newChat.id });
       await newChat.$add('messages', newMessage);
 
-      // TODO: temporary descision, broadcast to all admins
-      // need resolve case with 
+      // TODO: temporary solution, broadcast to all admins
+      // need resolve case with several roles for one user
       const admins = await this.usersService.getAdmins();
 
       const recipients = admins.map((admin) => admin.id);
@@ -88,92 +107,44 @@ export class ChatsService {
         .filter((session) => recipients.includes(session.userId))
         .map((session) => session.socketId);
 
-      this.broadcastMessagesToChatUsers(activeRecipients, newMessage, socket);
+      this.broadcastMessagesToRecipients(activeRecipients, newMessage, socket);
     } else if (isUserAddMessageToExistChat) {
       console.log('-------------isUserAddMessageToExistChat------------');
 
       const userChatId = user.chats[0].id;
-      const userChat = await this.chatRepository.findByPk(userChatId, {
-        include: [
-          {
-            model: User, // Модель User
-            // where: { id: specificUserId }, // здесь можно добавить исключение - senderId
-            through: { attributes: [] }, // Исключаем атрибуты промежуточной таблицы UserChats, если они не нужны
-          },
-        ],
-      });
+
+      const userChat = await this.getChatWithIncludedUsers(userChatId);
 
       const newMessage = await this.messagesService.createMessage(message, senderId);
 
       await newMessage.update({ chatId: userChat.id });
       await userChat.$add('messages', newMessage);
 
-      // recipients - users of current message's chat
-      const recipients = userChat.users
-        .filter((recipient) => recipient.id !== user.id)
-        .map((recipient) => recipient.id);
-
-      const activeRecipients = activeSessions
-        .filter((session) => recipients.includes(session.userId))
-        .map((session) => session.socketId);
-      this.broadcastMessagesToChatUsers(activeRecipients, newMessage, socket);
+      this.broadcastToActiveRecipients(userChat, user, activeSessions, newMessage, socket);
     } else if (isAdminAddMessageToExistChat) {
       console.log('-------------isAdminAddMessageToExistChat------------', message);
-      const userChat = await this.chatRepository.findByPk(message.chatId, {
-        include: [
-          {
-            model: User, // Модель User
-            // where: { id: specificUserId }, // could be exclude here by senderId
-            // TODO: need resolve case with several roles before
-            through: { attributes: [] }, // Could be exceptions here
-          },
-        ],
-      });
+
+      const userChat = await this.getChatWithIncludedUsers(message.chatId);
 
       const newMessage = await this.messagesService.createMessage(message, senderId);
 
       await newMessage.update({ chatId: userChat.id });
       await userChat.$add('messages', newMessage);
 
-      // recipients - users of current message's chat
-      const recipients = userChat.users
-        .filter((recipient) => recipient.id !== user.id)
-        .map((recipient) => recipient.id);
-
-      const activeRecipients = activeSessions
-        .filter((session) => recipients.includes(session.userId))
-        .map((session) => session.socketId);
-
-      this.broadcastMessagesToChatUsers(activeRecipients, newMessage, socket);
+      this.broadcastToActiveRecipients(userChat, user, activeSessions, newMessage, socket);
     } else if (isAdminFirstMessageToExistChat) {
       console.log('-------------isAdminFirstMessageToExistChat------------', message);
+
       await this.joinUserToChat(message.chatId, senderId);
 
-      const userChat = await this.chatRepository.findByPk(message.chatId, {
-        include: [
-          {
-            model: User,
-            // where: { id: specificUserId }, // could be exclude here by senderId
-            // TODO: need resolve case with several roles before
-            through: { attributes: [] }, // Could be exceptions here
-          },
-        ],
-      });
+      const userChat = await this.getChatWithIncludedUsers(message.chatId);
 
       const newMessage = await this.messagesService.createMessage(message, senderId);
 
       await newMessage.update({ chatId: userChat.id });
       await userChat.$add('messages', newMessage);
 
-      const recipients = userChat.users
-        .filter((recipient) => recipient.id !== user.id)
-        .map((recipient) => recipient.id);
-
-      const activeRecipients = activeSessions
-        .filter((session) => recipients.includes(session.userId))
-        .map((session) => session.socketId);
-
-      this.broadcastMessagesToChatUsers(activeRecipients, newMessage, socket);
+      this.broadcastToActiveRecipients(userChat, user, activeSessions, newMessage, socket);
     } else {
       console.log('--------- handle message unexpected case --------');
     }
@@ -187,22 +158,32 @@ export class ChatsService {
     return newChat;
   }
 
+  broadcastToActiveRecipients(
+    chat: Chat,
+    user: User,
+    activeSessions: ActiveSocket[],
+    message: Message,
+    socket,
+  ) {
+    const activeRecipients = getActiveRecipientsIds(chat, user, activeSessions);
+    this.broadcastMessagesToRecipients(activeRecipients, message, socket);
+  }
+
   // argument activeRecipients - sockets of users from chat.users exclude sender
-  broadcastMessagesToChatUsers(activeRecipients: string[], message: Message, socket) {
+  broadcastMessagesToRecipients(recipientsSocketIds: string[], message: Message, socket) {
+    // TODO: can be used here if we need sessions from db
     // const sessions = await this.activeSessionService.getSessionsByUserIds(userIds);
 
-    if (!activeRecipients.length) {
+    if (!recipientsSocketIds.length) {
       console.log('---------- no active sessions available ----------');
     }
 
-    console.log('activeRecipients -======>:', activeRecipients);
+    console.log('<------ activeRecipients -------->:', recipientsSocketIds);
 
-    // need update broadcast
-    activeRecipients.forEach((recipientSocketId) => {
+    recipientsSocketIds.forEach((recipientSocketId) => {
       if (recipientSocketId) {
         socket.to(recipientSocketId).emit('message', {
           message,
-          recipientSocketId,
         });
       }
     });

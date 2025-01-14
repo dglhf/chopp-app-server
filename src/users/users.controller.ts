@@ -98,7 +98,7 @@ export class UsersController {
       process.env.JWT_ACCESS_SECRET_HEX,
     );
 
-    // return this.usersService.getAllUsers(page, limit, search, sort, order, isRequesterIncluded, payload.id);
+    return this.usersService.getAllUsers(page, limit, search, sort, order, isRequesterIncluded, payload.id);
   }
 
   @ApiOperation({ summary: 'Getting current user' })
