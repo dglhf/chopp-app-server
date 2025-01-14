@@ -8,10 +8,11 @@ import { User } from 'src/users/users.model';
 import { ShoppingCartItem } from 'src/shopping-cart/shopping-cart-item.model';
 import { PaymentsModule } from 'src/payment/payments.module';
 import { ShoppingCart } from 'src/shopping-cart/shopping-cart.model';
+import { OrderItem } from './order-item.model';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([Order, User, ShoppingCartItem, ShoppingCart]),
+    SequelizeModule.forFeature([Order, OrderItem, User, ShoppingCartItem, ShoppingCart]),
     forwardRef(() => AuthModule),
     PaymentsModule
   ],

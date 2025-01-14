@@ -51,7 +51,7 @@ export class OrderController {
     @Req() req: any,
     @Body() createOrderDto: CreateOrderDto,
   ): Promise<CreateOrderResponseDto> {
-    return this.orderService.createOrder(req.user.id, createOrderDto);
+    return this.orderService.createOrder(req.user.id, createOrderDto.returnUrl);
   }
 
   // order.controller.ts

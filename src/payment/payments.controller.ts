@@ -21,15 +21,17 @@ import { GetPaymentResponseDto } from 'src/order/dto/get-payment-response.dto';
 import { GetRefundResponseDto } from 'src/order/dto/get-refund-response.dto';
 import { OrderService } from 'src/order/order.service';
 import { PaymentsService } from './payments.service';
+import { Roles } from 'src/auth/roles-auth.decorator';
+import { RolesGuard } from 'src/auth/roles-auth.guard';
 
 @ApiTags('payments')
 @ApiBearerAuth()
 @Controller('payments')
 @UseGuards(JwtAuthGuard)
+@Roles('ADMIN')
+@UseGuards(RolesGuard)
 export class PaymentsController {
-  constructor(
-    private readonly paymentService: PaymentsService,
-  ) {}
+  constructor(private readonly paymentService: PaymentsService) {}
 
   @Get('')
   @ApiOperation({ summary: 'Получить список платежей' })

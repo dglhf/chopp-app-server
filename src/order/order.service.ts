@@ -8,110 +8,41 @@ import { ShoppingCartItem } from 'src/shopping-cart/shopping-cart-item.model';
 import { Op } from 'sequelize';
 import { PaymentsService } from 'src/payment/payments.service';
 import { ShoppingCart } from 'src/shopping-cart/shopping-cart.model';
+import { OrderItem } from './order-item.model';
+import { Product } from 'src/products/product.model';
 
 @Injectable()
 export class OrderService {
   constructor(
     @InjectModel(Order) private orderModel: typeof Order,
-    private paymentService: PaymentsService,
+    @InjectModel(OrderItem) private orderItemModel: typeof OrderItem,
+    @InjectModel(ShoppingCart) private shoppingCartModel: typeof ShoppingCart,
     @InjectModel(ShoppingCartItem)
-    private shoppingCartItemModel: typeof ShoppingCartItem, // Убедитесь, что модель инжектирована
-    @InjectModel(ShoppingCart)
-    private shoppingCartModel: typeof ShoppingCart, // Убедитесь, что модель инжектирована
+    private shoppingCartItemModel: typeof ShoppingCartItem,
+    private paymentService: PaymentsService,
   ) {}
-
-  // async createOrder(
-  //   userId: number,
-  //   createOrderDto: CreateOrderDto,
-  // ): Promise<CreateOrderResponseDto> {
-  //   const transaction = await this.orderModel.sequelize.transaction();
-
-  //   try {
-  //     // Создание заказа без элементов
-  //     const order = await this.orderModel.create(
-  //       {
-  //         userId,
-  //         totalPrice: createOrderDto.totalPrice,
-  //         quantity: createOrderDto.quantity,
-  //         orderStatus: ORDER_STATUS.PENDING,
-  //         paymentStatus: PAYMENT_STATUS.PENDING,
-  //       },
-  //       { transaction },
-  //     );
-
-  //     console.log('---orderL: ', order)
-
-  //     // Добавление элементов заказа
-  //     await Promise.all(
-  //       createOrderDto.items.map((itemDto) =>
-  //         this.shoppingCartItemModel.create(
-  //           {
-  //             productId: itemDto.productId,
-  //             quantity: itemDto.quantity,
-  //             orderId: order.id, // Привязка к созданному заказу
-  //           },
-  //           { transaction },
-  //         ),
-  //       ),
-  //     );
-
-  //     console.log('----here---')
-
-  //     // Создание платежа
-  //     const paymentResult = await this.paymentService.createPayment({
-  //       amount: order.totalPrice.toString(),
-  //       returnUrl: createOrderDto.returnUrl,
-  //       description: `Payment for order ${order.id}`,
-  //     });
-
-  //     // Обновление данных заказа
-  //     order.transactionId = paymentResult.id;
-  //     order.paymentStatus = PAYMENT_STATUS.PENDING;
-  //     order.paymentUrl = paymentResult.confirmation.confirmation_url;
-  //     await order.save({ transaction });
-
-  //     await transaction.commit();
-
-  //     return {
-  //       id: order.id,
-  //       totalPrice: order.totalPrice,
-  //       quantity: order.quantity,
-  //       orderStatus: order.orderStatus,
-  //       paymentStatus: order.paymentStatus,
-  //       transactionId: order.transactionId,
-  //       paymentUrl: order.paymentUrl,
-  //     } as CreateOrderResponseDto;
-  //   } catch (error) {
-  //     await transaction.rollback();
-  //     throw new NotFoundException(
-  //       `Failed to create order or initiate payment. ${String(error)}`,
-  //     );
-  //   }
-  // }
 
   async createOrder(
     userId: number,
-    createOrderDto: CreateOrderDto,
+    returnUrl: string,
   ): Promise<CreateOrderResponseDto> {
     const transaction = await this.orderModel.sequelize.transaction();
 
     try {
-      // Получаем корзину пользователя
       const cart = await this.shoppingCartModel.findOne({
         where: { userId: userId },
-        include: [ShoppingCartItem], // Убедись, что модель и связи настроены правильно
+        include: [{ model: ShoppingCartItem, include: [{ model: Product }] }],
         transaction: transaction,
       });
 
-      if (!cart) {
-        throw new NotFoundException('Корзина не найдена.');
+      if (!cart || !cart.items.length) {
+        throw new NotFoundException('Корзина пуста или не найдена.');
       }
 
-      // Создание заказа
       const order = await this.orderModel.create(
         {
           userId,
-          totalPrice: cart.totalPrice, // Пример получения общей стоимости из корзины
+          totalPrice: cart.totalPrice,
           quantity: cart.items.reduce((sum, item) => sum + item.quantity, 0),
           orderStatus: ORDER_STATUS.PENDING,
           paymentStatus: PAYMENT_STATUS.PENDING,
@@ -119,24 +50,24 @@ export class OrderService {
         { transaction },
       );
 
-      // Обновляем элементы корзины, присваивая им orderId
-      await Promise.all(
-        cart.items.map((item) =>
-          this.shoppingCartItemModel.update(
-            { orderId: order.id },
-            { where: { id: item.id }, transaction },
-          ),
-        ),
-      );
+      for (const item of cart.items) {
+        await this.orderItemModel.create(
+          {
+            orderId: order.id,
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.product.price,
+          },
+          { transaction },
+        );
+      }
 
-      // Создание платежа
       const paymentResult = await this.paymentService.createPayment({
         amount: order.totalPrice.toString(),
-        returnUrl: createOrderDto.returnUrl,
+        returnUrl: returnUrl,
         description: `Оплата за заказ ${order.id}`,
       });
 
-      // Обновление данных заказа
       order.transactionId = paymentResult.id;
       order.paymentStatus = PAYMENT_STATUS.PENDING;
       order.paymentUrl = paymentResult.confirmation.confirmation_url;
