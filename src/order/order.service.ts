@@ -10,6 +10,8 @@ import { PaymentsService } from 'src/payment/payments.service';
 import { ShoppingCart } from 'src/shopping-cart/shopping-cart.model';
 import { OrderItem } from './order-item.model';
 import { Product } from 'src/products/product.model';
+import { PaginationResponse } from 'src/shared/types/pagination-response';
+import { PaginationQuery } from 'src/shared/types';
 
 @Injectable()
 export class OrderService {
@@ -92,13 +94,13 @@ export class OrderService {
     }
   }
 
-  async findAllOrders(
-    page: number = 1,
-    limit: number = 10,
-    search?: string,
-    sort: string = 'createdAt',
-    order: string = 'ASC',
-  ) {
+  async findAllOrders({
+    page = 1,
+    limit = 10,
+    search,
+    sort = 'createdAt',
+    order = 'ASC',
+  }: PaginationQuery): Promise<PaginationResponse<Order>> {
     const offset = (page - 1) * limit;
     const whereCondition = search
       ? {
@@ -109,7 +111,6 @@ export class OrderService {
         }
       : {};
 
-    console.log('---findAllOrders!');
     const { rows: orders, count: totalItems } =
       await this.orderModel.findAndCountAll({
         where: whereCondition,
@@ -118,13 +119,12 @@ export class OrderService {
         order: [[sort, order]],
       });
 
-    console.log('orders: ', orders);
-
     return {
       items: orders,
       totalItems,
       totalPages: Math.ceil(totalItems / limit),
       currentPage: page,
+      limit
     };
   }
 }
