@@ -8,7 +8,7 @@ import { MessagesService } from './messages.service';
 import { Sequelize } from 'sequelize';
 import { Socket } from 'socket.io';
 import { getActiveRecipientsIds } from 'src/shared/utils/chat-utils';
-import { ActiveSocket } from 'src/shared/types/ws';
+import { ActiveSocket } from 'src/shared/types';
 
 @Injectable()
 export class ChatsService {

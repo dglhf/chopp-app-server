@@ -13,7 +13,7 @@ import { ActiveSessionService } from '../active-sessions/active-session.service'
 import { ChatsService } from './chats.service';
 import { Message } from './messages.model';
 import { Server } from 'socket.io';
-import { ActiveSocket } from 'src/shared/types/ws';
+import { ActiveSocket } from 'src/shared/types';
 
 @WebSocketGateway({ cors: true })
 export class ChatsGateway extends BaseGateway {
