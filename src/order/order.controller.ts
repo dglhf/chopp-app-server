@@ -19,11 +19,11 @@ import {
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { CreateOrderResponseDto } from './dto/create-order-response.dto copy';
+import { CreatePaymentResponseDto } from '../payment/dto/create-payment-response.dto';
 import { PaymentsService } from 'src/payment/payments.service';
 import { GetPaymentsResponseDto } from './dto/get-payments-response.dto';
 import { GetPaymentResponseDto } from './dto/get-payment-response.dto';
-import { CapturePaymentDto } from './dto/capture-payment.dto';
+import { CapturePaymentDto } from '../payment/dto/capture-payment.dto';
 import { CreateRefundDto } from './dto/create-refund.dto';
 import { GetRefundResponseDto } from './dto/get-refund-response.dto';
 import { GetRefundsResponseDto } from './dto/get-refunds-response.dto';
@@ -41,20 +41,20 @@ export class OrderController {
     private readonly paymentService: PaymentsService,
   ) {}
 
-  @Post()
-  @ApiOperation({ summary: 'Создать новый заказ и инициировать платеж' })
-  @ApiResponse({
-    status: 201,
-    description: 'Заказ успешно создан, и платеж инициирован',
-    type: CreateOrderResponseDto,
-  })
-  @ApiResponse({ status: 403, description: 'Доступ запрещен' })
-  async createOrder(
-    @Req() req: any,
-    @Body() createOrderDto: CreateOrderDto,
-  ): Promise<CreateOrderResponseDto> {
-    return this.orderService.createOrder(req.user.id, createOrderDto.returnUrl);
-  }
+  // @Post()
+  // @ApiOperation({ summary: 'Создать новый заказ и инициировать платеж' })
+  // @ApiResponse({
+  //   status: 201,
+  //   description: 'Заказ успешно создан, и платеж инициирован',
+  //   type: CreatePaymentResponseDto,
+  // })
+  // @ApiResponse({ status: 403, description: 'Доступ запрещен' })
+  // async createOrder(
+  //   @Req() req: any,
+  //   @Body() createOrderDto: CreateOrderDto,
+  // ): Promise<CreatePaymentResponseDto> {
+  //   return this.orderService.createOrder(req.user.id, createOrderDto.returnUrl);
+  // }
 
   // order.controller.ts
 

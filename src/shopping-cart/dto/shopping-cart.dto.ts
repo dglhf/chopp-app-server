@@ -6,7 +6,7 @@ export class ShoppingCartDto {
     type: [ShoppingCartItemDto],
     description: 'List of items in the shopping cart',
   })
-  items: ShoppingCartItemDto[];
+  items: any[];
 
   @ApiProperty({
     example: 3000,

@@ -6,6 +6,7 @@ import {
   Param,
   Post,
   Body,
+  Req,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -13,9 +14,9 @@ import {
   ApiOperation,
   ApiResponse,
   ApiQuery,
+  ApiBody,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { CapturePaymentDto } from 'src/order/dto/capture-payment.dto';
 import { CreateRefundDto } from 'src/order/dto/create-refund.dto';
 import { GetPaymentResponseDto } from 'src/order/dto/get-payment-response.dto';
 import { GetRefundResponseDto } from 'src/order/dto/get-refund-response.dto';
@@ -23,15 +24,35 @@ import { OrderService } from 'src/order/order.service';
 import { PaymentsService } from './payments.service';
 import { Roles } from 'src/auth/roles-auth.decorator';
 import { RolesGuard } from 'src/auth/roles-auth.guard';
+import { CreatePaymentResponseDto } from './dto/create-payment-response.dto';
+import { CapturePaymentDto } from './dto/capture-payment.dto';
+import { CreatePaymentDto } from './dto/create-payment.dto';
 
 @ApiTags('payments')
 @ApiBearerAuth()
 @Controller('payments')
 @UseGuards(JwtAuthGuard)
-@Roles('ADMIN')
-@UseGuards(RolesGuard)
 export class PaymentsController {
   constructor(private readonly paymentService: PaymentsService) {}
+
+  @Post()
+@ApiOperation({
+  summary: 'Инициировать платеж на основе корзины пользователя',
+})
+@ApiBody({
+  description: 'Данные для инициации платежа',
+  type: CreatePaymentDto,
+})
+@ApiResponse({
+  status: 201,
+  description: 'Платеж успешно инициирован, возвращен URL для оплаты',
+  type: CreatePaymentResponseDto,
+})
+@ApiResponse({ status: 403, description: 'Доступ запрещен' })
+async createPayment(@Req() req: any): Promise<CreatePaymentResponseDto> {
+  return this.paymentService.createPayment(req.user.id, req.body.returnUrl);
+}
+
 
   @Get('')
   @ApiOperation({ summary: 'Получить список платежей' })
@@ -87,6 +108,8 @@ export class PaymentsController {
     type: String,
     description: 'Фильтр по статусу платежа',
   })
+  @Roles('ADMIN')
+  @UseGuards(RolesGuard)
   async getPayments(
     @Query()
     queryParams: {
@@ -112,6 +135,8 @@ export class PaymentsController {
     description: 'Подробная информация о платеже успешно получена',
     type: GetPaymentResponseDto,
   })
+  @Roles('ADMIN')
+  @UseGuards(RolesGuard)
   async getPayment(
     @Param('paymentId') paymentId: string,
   ): Promise<GetPaymentResponseDto> {
@@ -122,6 +147,8 @@ export class PaymentsController {
   @Post('/:paymentId/capture')
   @ApiOperation({ summary: 'Подтвердить платеж' })
   @ApiResponse({ status: 200, description: 'Платеж успешно подтвержден' })
+  @Roles('ADMIN')
+  @UseGuards(RolesGuard)
   async capturePayment(
     @Param('paymentId') paymentId: string,
     @Body() captureDto: CapturePaymentDto,
@@ -138,6 +165,8 @@ export class PaymentsController {
     description: 'Платеж успешно отменен',
     type: 'any', // Указать конкретный тип, если необходимо
   })
+  @Roles('ADMIN')
+  @UseGuards(RolesGuard)
   async cancelPayment(@Param('paymentId') paymentId: string) {
     return await this.paymentService.cancelPayment(paymentId);
   }
@@ -149,6 +178,8 @@ export class PaymentsController {
     description: 'Возврат успешно создан',
     type: GetRefundResponseDto,
   })
+  @Roles('ADMIN')
+  @UseGuards(RolesGuard)
   createRefund(
     @Body() createRefundDto: CreateRefundDto,
   ): Promise<GetRefundResponseDto> {
@@ -206,6 +237,8 @@ export class PaymentsController {
     type: String,
     description: 'Фильтр по статусу возврата',
   })
+  @Roles('ADMIN')
+  @UseGuards(RolesGuard)
   async getRefunds(
     @Query()
     queryParams: {
@@ -229,6 +262,8 @@ export class PaymentsController {
     description: 'Информация о возврате',
     type: GetRefundResponseDto,
   })
+  @Roles('ADMIN')
+  @UseGuards(RolesGuard)
   getRefundById(
     @Param('refundId') refundId: string,
   ): Promise<GetRefundResponseDto> {

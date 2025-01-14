@@ -2,7 +2,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { ORDER_STATUS, PAYMENT_STATUS } from 'src/shared/enums';
 
-export class CreateOrderResponseDto {
+export class CreatePaymentResponseDto {
   @ApiProperty({ description: 'ID of the order' })
   id: number;
 

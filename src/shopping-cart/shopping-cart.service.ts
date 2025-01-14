@@ -11,6 +11,7 @@ import { ShoppingCart } from './shopping-cart.model';
 import { Transaction } from 'sequelize';
 import { ShoppingCartDto } from './dto/shopping-cart.dto';
 import { ShoppingCartItem } from './shopping-cart-item.model';
+import { FileModel } from 'src/files/file.model';
 
 @Injectable()
 export class ShoppingCartService implements OnModuleInit {
@@ -18,8 +19,7 @@ export class ShoppingCartService implements OnModuleInit {
 
   constructor(
     @InjectModel(ShoppingCart) private shoppingCartModel: typeof ShoppingCart,
-    @InjectModel(ShoppingCartItem)
-    private shoppingCartItemModel: typeof ShoppingCartItem,
+    @InjectModel(ShoppingCartItem) private shoppingCartItemModel: typeof ShoppingCartItem,
     @InjectModel(Product) private productModel: typeof Product,
     @InjectModel(User) private userModel: typeof User,
   ) {}
@@ -60,68 +60,78 @@ export class ShoppingCartService implements OnModuleInit {
       include: [
         {
           model: ShoppingCartItem,
-          include: [{ model: Product }],
+          include: [
+            {
+              model: Product,
+              include: [{ model: FileModel, as: 'images' }], // Включаем связанные изображения
+            },
+          ],
         },
       ],
     });
-
+  
     if (!cart) {
       throw new NotFoundException('Shopping cart not found');
     }
-
-    const items = cart.items.map((item) => ({
-      productId: item.productId,
-      productName: item.product.title,
-      price: item.product.price,
+  
+    // Преобразуем данные в JSON, чтобы избежать циклических ссылок
+    const plainCart = cart.toJSON();
+  
+    const items = plainCart.items.map((item) => ({
+      product: {
+        ...item.product,
+        images: item.product.images, // Добавляем изображения
+      },
       quantity: item.quantity,
       totalPrice: item.quantity * item.product.price,
     }));
-
-    return { items, totalPrice: cart.totalPrice, quantity: cart.quantity };
+  
+    return { items, totalPrice: plainCart.totalPrice, quantity: plainCart.quantity };
   }
+  
+  
+  
 
   async addProductsToCart(
     userId: number,
     items: { productId: number; quantity: number }[],
-  ): Promise<any> {
+  ): Promise<{ items: any[]; totalPrice: number; quantity: number }> {
     const transaction = await this.shoppingCartModel.sequelize.transaction();
-
+  
     try {
       let cart = await this.shoppingCartModel.findOne({
         where: { userId },
         transaction,
       });
-
+  
       if (!cart) {
         cart = await this.shoppingCartModel.create(
           {
             userId,
             totalPrice: 0,
-            quantity: 0, // Инициализируем количеством 0 при создании новой корзины
+            quantity: 0,
           },
           { transaction },
         );
       }
-
-      let totalQuantity = 0; // Общее количество товаров для обновления
-      let totalPrice = 0; // Общая стоимость товаров для обновления
-
+  
       await this.shoppingCartItemModel.destroy({
         where: { shoppingCartId: cart.id },
         transaction,
       });
-
+  
+      let detailedItems = [];
+  
       for (const item of items) {
         const product = await this.productModel.findByPk(item.productId, {
+          include: [{ model: FileModel, as: 'images' }], // Включаем связанные изображения
           transaction,
         });
         if (!product) {
-          throw new NotFoundException(
-            `Product with ID ${item.productId} not found`,
-          );
+          throw new NotFoundException(`Product with ID ${item.productId} not found`);
         }
-
-        await this.shoppingCartItemModel.create(
+  
+        const newItem = await this.shoppingCartItemModel.create(
           {
             productId: item.productId,
             quantity: item.quantity,
@@ -129,60 +139,37 @@ export class ShoppingCartService implements OnModuleInit {
           },
           { transaction },
         );
-
-        totalQuantity += item.quantity; // Суммируем количество
-        totalPrice += item.quantity * product.price; // Суммируем стоимость
+  
+        detailedItems.push({
+          product: {
+            ...product.toJSON(),
+            images: product.images, // Добавляем изображения
+          },
+          quantity: newItem.quantity,
+          totalPrice: newItem.quantity * product.price,
+        });
+  
+        cart.totalPrice += newItem.quantity * product.price;
+        cart.quantity += newItem.quantity;
       }
-
-      // Обновляем общее количество и общую стоимость корзины
-      cart.quantity = totalQuantity;
-      cart.totalPrice = totalPrice;
+  
       await cart.save({ transaction });
-
+  
       await transaction.commit();
-      return { message: 'Shopping cart updated successfully.' };
+  
+      return {
+        items: detailedItems,
+        totalPrice: cart.totalPrice,
+        quantity: cart.quantity,
+      };
     } catch (error) {
       await transaction.rollback();
       throw error;
     }
   }
+  
+  
 
-  // async removeProductFromCart(userId: number, productId: number): Promise<any> {
-  //   const transaction = await this.shoppingCartModel.sequelize.transaction();
-
-  //   try {
-  //     const cart = await this.shoppingCartModel.findOne({
-  //       where: { userId },
-  //       transaction,
-  //     });
-
-  //     if (!cart) {
-  //       throw new NotFoundException('Shopping cart not found');
-  //     }
-
-  //     const cartItem = await this.shoppingCartItemModel.findOne({
-  //       where: { productId, shoppingCartId: cart.id },
-  //       transaction,
-  //     });
-
-  //     if (!cartItem) {
-  //       throw new NotFoundException(
-  //         `Product with ID ${productId} not found in cart`,
-  //       );
-  //     }
-
-  //     // Уменьшаем общее количество на количество удаляемого товара
-  //     cart.quantity -= cartItem.quantity;
-  //     await cartItem.destroy({ transaction });
-  //     await cart.save({ transaction });
-
-  //     await transaction.commit();
-  //     return { message: 'Product removed from cart successfully' };
-  //   } catch (error) {
-  //     await transaction.rollback();
-  //     throw error;
-  //   }
-  // }
 
   async clearCart(userId: number): Promise<any> {
     const transaction = await this.shoppingCartModel.sequelize.transaction();

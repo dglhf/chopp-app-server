@@ -2,16 +2,39 @@ import { Injectable, HttpException, NotFoundException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { randomBytes } from 'crypto';
 import { YOOKASSA_URL } from './constants';
-import { CapturePaymentDto } from 'src/order/dto/capture-payment.dto';
 import { CreateRefundDto } from 'src/order/dto/create-refund.dto';
 import { GetRefundsResponseDto } from 'src/order/dto/get-refunds-response.dto';
 import { GetRefundResponseDto } from 'src/order/dto/get-refund-response.dto';
+import { InjectModel } from '@nestjs/sequelize';
+import { Product } from 'src/products/product.model';
+import { ShoppingCartItem } from 'src/shopping-cart/shopping-cart-item.model';
+import { ShoppingCart } from 'src/shopping-cart/shopping-cart.model';
+import { CapturePaymentDto } from './dto/capture-payment.dto';
 
 @Injectable()
 export class PaymentsService {
-  constructor(private httpService: HttpService) {}
+  constructor(
+    private httpService: HttpService,
+    @InjectModel(ShoppingCart) private shoppingCartModel: typeof ShoppingCart,
+  ) {}
 
-  async createPayment(orderDetails: any): Promise<any> {
+  async createPayment(userId: number, returnUrl: string): Promise<any> {
+    const cart = await this.shoppingCartModel.findOne({
+      where: { userId },
+      include: [{ model: ShoppingCartItem, include: [{ model: Product }] }],
+    });
+
+    if (!cart || cart.items.length === 0) {
+      throw new NotFoundException('Корзина пуста или не найдена.');
+    }
+
+    const totalAmount = cart.items.reduce(
+      (acc, item) => acc + item.quantity * item.product.price,
+      0,
+    );
+
+    console.log('---cart: ', cart)
+
     //TODO: YOOKASSA_SHOP_ID хранить в базе для каждого конкретного заказчика
     const shopId = process.env.YOOKASSA_SHOP_ID;
     const secretKey = process.env.YOOKASSA_SECRET_KEY;
@@ -25,7 +48,7 @@ export class PaymentsService {
     };
     const body = {
       amount: {
-        value: orderDetails.amount,
+        value: totalAmount,
         currency: 'RUB',
       },
       payment_method_data: {
@@ -33,9 +56,9 @@ export class PaymentsService {
       },
       confirmation: {
         type: 'redirect',
-        return_url: orderDetails.returnUrl,
+        return_url: returnUrl,
       },
-      description: orderDetails.description,
+      description: 'description',
     };
 
     try {
@@ -45,7 +68,7 @@ export class PaymentsService {
       return response.data;
     } catch (error) {
       throw new NotFoundException(
-        `Failed to initiate payment. ${String(error.response.data)}`,
+        `Failed to initiate payment. ${String(error.response.data?.description || error.response.data)}`,
       );
     }
   }
