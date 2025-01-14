@@ -23,10 +23,15 @@ export abstract class BaseGateway
       // Аутентификация пользователя
       const { payload: user, error } = this.jwtMiddleware.validate(client);
       if (error) {
-        return client.send({
+        return client.emit('tokenExpired', {
           type: WS_MESSAGE_TYPE.TOKEN_EXPIRED,
           payload: error,
-        });
+          //     //     type: 'message',
+          //     //     message: 'Thank you for your message. We are looking into it.',
+          //     //     timeStamp: new Date().valueOf(),
+          //     //     payload: { sender: 'support' },
+          //     //   });
+        })
       }
 
       client.data.user = user;

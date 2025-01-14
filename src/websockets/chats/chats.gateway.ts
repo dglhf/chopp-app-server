@@ -3,30 +3,50 @@ import {
   SubscribeMessage,
   MessageBody,
   ConnectedSocket,
+  WebSocketServer,
 } from '@nestjs/websockets';
 
 import { Socket } from 'socket.io';
 import { BaseGateway } from '../gateways/base.gateway';
 import { WsJwtMiddleware } from '../middlewares/ws-jwt-middleware';
 import { ActiveSessionService } from '../active-sessions/active-session.service';
+import { ChatsService } from './chats.service';
+import { Message } from './messages.model';
+import { Server } from 'socket.io';
+import { ActiveSocket } from 'src/shared/types';
 
 @WebSocketGateway({ cors: true })
 export class ChatsGateway extends BaseGateway {
+  @WebSocketServer()
+  private server: Server;
+
   constructor(
     jwtMiddleware: WsJwtMiddleware,
     activeSessionService: ActiveSessionService,
+    private chatsService: ChatsService,
   ) {
     super(jwtMiddleware, activeSessionService);
   }
 
   @SubscribeMessage('message')
   handleMessage(
-    @MessageBody() message: string,
-    @ConnectedSocket() client: Socket,
+    @MessageBody() message: { payload: Message },
+    @ConnectedSocket() socket: Socket,
   ) {
-    const user = client.data.user;
-    console.log(`Message from user ${user.id}:`, message);
-    client.emit('message', { message: 'Message processed' });
+    const user = socket.data.user;
+
+    if (!user) return;
+    console.log(` ------ Message from user ${user.id}:`, message);
+    // TODO: just for testing
+    // socket.emit('message', { message: 'Message processed' });
+
+    const activeSockets = Array.from(this.server.sockets.sockets.values());
+    const activeSessions: ActiveSocket[] = activeSockets.map((socket) => ({
+      socketId: socket?.id,
+      userId: socket?.data?.user?.id,
+    }));
+    
+    this.chatsService.handleMessage(socket, activeSessions, message.payload, user.id);
   }
 }
 

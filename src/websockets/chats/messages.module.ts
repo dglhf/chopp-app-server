@@ -1,7 +1,6 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { ChatsService } from './chats.service';
-import { ChatsGateway } from './chats.gateway';
 import { Chat } from './chats.model';
 import { UserChats } from './user-chats.model';
 import { RolesModule } from 'src/roles/roles.module';

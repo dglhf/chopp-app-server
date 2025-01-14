@@ -209,6 +209,21 @@ export class UsersService {
     return user;
   }
 
+  async getAdmins() {
+    return await this.userRepository.findAll({
+      attributes: ['id'], // Только id пользователей
+      include: [
+        {
+          model: Role,
+          attributes: [],
+          where: {
+            value: 'ADMIN',
+          },
+        },
+      ],
+    });
+  }
+
   private async isFieldTakenByAnotherUser(
     value: string,
     fieldName: string,

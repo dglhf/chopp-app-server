@@ -7,6 +7,7 @@ import { UsersService } from 'src/users/users.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { AuthService } from 'src/auth/auth.service';
 import { MessagesService } from './messages.service';
+import { Message } from './messages.model';
 
 @ApiTags('chats')
 @Controller('chats')
@@ -51,11 +52,33 @@ export class ChatsController {
   }
 
   @ApiOperation({ summary: 'Getting chat messages by chat id param' })
-  @ApiResponse({ status: 200, type: [Chat] })
+  @ApiResponse({ status: 200, type: [Message] })
   @UseGuards(JwtAuthGuard)
   @Get('/:id/messages')
   getAllChatMessages(@Param() params) {
     const { id } = params;
     return this.messageService.getAllChatMessages(id);
+  }
+
+  @ApiOperation({ summary: "Getting chat messages for USER's app with one chat" })
+  @ApiResponse({ status: 200, type: [Chat] })
+  @UseGuards(JwtAuthGuard)
+  @Get('/currentUserMessages')
+  async getCurrentUserMessages(@Headers() headers) {
+    const authHeader = headers.authorization;
+    const accessToken = authHeader.split(' ')[1];
+
+    const payload = this.authService.verifyToken(
+      accessToken,
+      process.env.JWT_ACCESS_SECRET_HEX,
+    );
+
+    const chat = await this.chatsService.getAllChatMessagesByUserId(payload.id);
+
+    if (chat) {
+      return await this.messageService.getAllChatMessages(chat.id);
+    } else { 
+      return [];
+    }
   }
 }
