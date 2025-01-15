@@ -48,6 +48,7 @@ export class Order extends Model<Order> {
   @Column({ type: DataType.TEXT })
   transactionId: string;
 
+  //TODO: удалить, paymentUrl здесь не нужен, можно взять из payments? 
   @Column({ type: DataType.TEXT })
   paymentUrl: string;
 }

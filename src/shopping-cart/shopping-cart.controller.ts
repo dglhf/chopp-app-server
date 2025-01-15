@@ -45,21 +45,6 @@ export class ShoppingCartController {
     return await this.shoppingCartService.addProductsToCart(req.user.id, body.items);
   }
 
-  // @Delete(':productId')
-  // @ApiOperation({ summary: 'Remove a product from the cart entirely' })
-  // @ApiResponse({ status: 200, description: 'Product removed from the cart successfully.' })
-  // async removeProductFromCart(@Req() req: any, @Param('productId', ParseIntPipe) productId: number): Promise<any> {
-  //   return await this.shoppingCartService.removeProductFromCart(req.user.id, productId);
-  // }
-
-  // @Put(':productId')
-  // @ApiOperation({ summary: 'Update cart item quantity' })
-  // @ApiBody({ type: UpdateCartItemDto })
-  // @ApiResponse({ status: 200, description: 'Cart item updated successfully.' })
-  // async updateCartItem(@Req() req: any, @Param('productId', ParseIntPipe) productId: number, @Body() body: UpdateCartItemDto): Promise<any> {
-  //   return await this.shoppingCartService.updateCartItem(req.user.id, productId, body.quantity);
-  // }
-
   @Delete('clear')
   @ApiOperation({ summary: 'Clear the shopping cart' })
   @ApiResponse({ status: 200, description: 'Shopping cart cleared successfully.' })

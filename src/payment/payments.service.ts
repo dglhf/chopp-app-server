@@ -58,7 +58,11 @@ export class PaymentsService {
         type: 'redirect',
         return_url: returnUrl,
       },
+      capture: true,
       description: 'description',
+      metadata: {
+        order_id: "37"
+      }
     };
 
     try {
@@ -67,8 +71,9 @@ export class PaymentsService {
         .toPromise();
       return response.data;
     } catch (error) {
+      console.log('----error: ', error)
       throw new NotFoundException(
-        `Failed to initiate payment. ${String(error.response.data?.description || error.response.data)}`,
+        `Failed to initiate payment. ${String(error?.response?.data?.description || error?.response?.data)}`,
       );
     }
   }
@@ -99,10 +104,12 @@ export class PaymentsService {
           params, // Передача фильтров как параметров запроса
         })
         .toPromise();
+
+        console.log('response.data: ', response.data)
       return response.data;
     } catch (error) {
       throw new NotFoundException(
-        `Failed to retrieve payments. ${String(error.response.data)}`,
+        `Failed to retrieve payments. ${String(error.response?.data?.description || error.response?.data)}`,
       );
     }
   }
