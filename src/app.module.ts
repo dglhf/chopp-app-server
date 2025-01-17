@@ -29,6 +29,7 @@ import { MessagesModule } from './websockets/chats/messages.module';
 import { OrderModule } from './order/order.module';
 import { Order } from './order/order.model';
 import { PaymentsModule } from './payment/payments.module';
+import { OrderItem } from './order/order-item.model';
 
 @Module({
   imports: [
@@ -60,7 +61,8 @@ import { PaymentsModule } from './payment/payments.module';
         ProductFile,
         ShoppingCart,
         ShoppingCartItem,
-        Order
+        Order,
+        OrderItem
       ],
       autoLoadModels: true,
     }),

@@ -18,38 +18,33 @@ export class PaymentsService {
     @InjectModel(ShoppingCart) private shoppingCartModel: typeof ShoppingCart,
   ) {}
 
-  async createPayment(userId: number, returnUrl: string): Promise<any> {
-    const cart = await this.shoppingCartModel.findOne({
-      where: { userId },
-      include: [{ model: ShoppingCartItem, include: [{ model: Product }] }],
-    });
-
-    if (!cart || cart.items.length === 0) {
-      throw new NotFoundException('Корзина пуста или не найдена.');
-    }
-
-    const totalAmount = cart.items.reduce(
-      (acc, item) => acc + item.quantity * item.product.price,
-      0,
-    );
-
-    console.log('---cart: ', cart)
-
-    //TODO: YOOKASSA_SHOP_ID хранить в базе для каждого конкретного заказчика
+  async createPayment({
+    amount,
+    currency,
+    description,
+    returnUrl,
+    metadata,
+  }: {
+    amount: string;
+    currency: string;
+    description: string;
+    returnUrl: string;
+    metadata: Record<string, any>;
+  }): Promise<any> {
     const shopId = process.env.YOOKASSA_SHOP_ID;
     const secretKey = process.env.YOOKASSA_SECRET_KEY;
     const auth = Buffer.from(`${shopId}:${secretKey}`).toString('base64');
-
+  
     const headers = {
       Authorization: `Basic ${auth}`,
       'Content-Type': 'application/json',
-      //TODO: разобраться с ключом идемпотентности
       'Idempotence-Key': this.generateIdempotenceKey(),
     };
+  
     const body = {
       amount: {
-        value: totalAmount,
-        currency: 'RUB',
+        value: amount,
+        currency: currency,
       },
       payment_method_data: {
         type: 'bank_card',
@@ -59,24 +54,24 @@ export class PaymentsService {
         return_url: returnUrl,
       },
       capture: true,
-      description: 'description',
-      metadata: {
-        order_id: "37"
-      }
+      description: description,
+      metadata: metadata,
     };
-
+  
     try {
       const response = await this.httpService
         .post(`${YOOKASSA_URL}/payments`, body, { headers })
         .toPromise();
       return response.data;
     } catch (error) {
-      console.log('----error: ', error)
       throw new NotFoundException(
-        `Failed to initiate payment. ${String(error?.response?.data?.description || error?.response?.data)}`,
+        `Failed to initiate payment. ${String(
+          error?.response?.data?.description || error?.response?.data,
+        )}`,
       );
     }
   }
+  
 
   async getPayments(params: {
     limit?: number;
@@ -105,7 +100,6 @@ export class PaymentsService {
         })
         .toPromise();
 
-        console.log('response.data: ', response.data)
       return response.data;
     } catch (error) {
       throw new NotFoundException(

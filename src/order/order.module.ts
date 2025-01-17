@@ -12,7 +12,7 @@ import { OrderItem } from './order-item.model';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([Order, OrderItem, User, ShoppingCartItem, ShoppingCart]),
+    SequelizeModule.forFeature([Order, OrderItem, User, ShoppingCart]),
     forwardRef(() => AuthModule),
     PaymentsModule
   ],

@@ -35,23 +35,23 @@ import { CreatePaymentDto } from './dto/create-payment.dto';
 export class PaymentsController {
   constructor(private readonly paymentService: PaymentsService) {}
 
-  @Post()
-  @ApiOperation({
-    summary: 'Инициировать платеж на основе корзины пользователя',
-  })
-  @ApiBody({
-    description: 'Данные для инициации платежа',
-    type: CreatePaymentDto,
-  })
-  @ApiResponse({
-    status: 201,
-    description: 'Платеж успешно инициирован, возвращен URL для оплаты',
-    type: CreatePaymentResponseDto,
-  })
-  @ApiResponse({ status: 403, description: 'Доступ запрещен' })
-  async createPayment(@Req() req: any): Promise<CreatePaymentResponseDto> {
-    return this.paymentService.createPayment(req.user.id, req.body.returnUrl);
-  }
+//   @Post()
+//   @ApiOperation({
+//     summary: 'Инициировать платеж на основе корзины пользователя',
+//   })
+//   @ApiBody({
+//     description: 'Данные для инициации платежа',
+//     type: CreatePaymentDto,
+//   })
+//   @ApiResponse({
+//     status: 201,
+//     description: 'Платеж успешно инициирован, возвращен URL для оплаты',
+//     type: CreatePaymentResponseDto,
+//   })
+//   @ApiResponse({ status: 403, description: 'Доступ запрещен' })
+//   async createPayment(@Req() req: any): Promise<CreatePaymentResponseDto> {
+//     return this.paymentService.createPayment(req.user.id, req.body.returnUrl);
+//   }
 
   @Get('')
   @ApiOperation({ summary: 'Получить список платежей' })

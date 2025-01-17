@@ -90,8 +90,6 @@ export class ShoppingCartService implements OnModuleInit {
   }
   
   
-  
-
   async addProductsToCart(
     userId: number,
     items: { productId: number; quantity: number }[],
@@ -115,16 +113,20 @@ export class ShoppingCartService implements OnModuleInit {
         );
       }
   
+      // Удаляем старые элементы корзины
       await this.shoppingCartItemModel.destroy({
         where: { shoppingCartId: cart.id },
         transaction,
       });
   
       let detailedItems = [];
+      let totalPrice = 0;
+      let totalQuantity = 0;
   
+      // Добавляем новые элементы в корзину
       for (const item of items) {
         const product = await this.productModel.findByPk(item.productId, {
-          include: [{ model: FileModel, as: 'images' }], // Включаем связанные изображения
+          include: [{ model: FileModel, as: 'images' }], // Включаем изображения
           transaction,
         });
         if (!product) {
@@ -140,19 +142,23 @@ export class ShoppingCartService implements OnModuleInit {
           { transaction },
         );
   
+        const itemTotalPrice = newItem.quantity * product.price;
+        totalPrice += itemTotalPrice;
+        totalQuantity += newItem.quantity;
+  
         detailedItems.push({
           product: {
             ...product.toJSON(),
-            images: product.images, // Добавляем изображения
+            images: product.images,
           },
           quantity: newItem.quantity,
-          totalPrice: newItem.quantity * product.price,
+          totalPrice: itemTotalPrice,
         });
-  
-        cart.totalPrice += newItem.quantity * product.price;
-        cart.quantity += newItem.quantity;
       }
   
+      // Обновляем корзину с пересчитанными значениями
+      cart.totalPrice = totalPrice;
+      cart.quantity = totalQuantity;
       await cart.save({ transaction });
   
       await transaction.commit();
@@ -167,6 +173,7 @@ export class ShoppingCartService implements OnModuleInit {
       throw error;
     }
   }
+  
   
   
 

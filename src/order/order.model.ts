@@ -9,6 +9,7 @@ import {
 } from 'sequelize-typescript';
 import { ShoppingCartItem } from 'src/shopping-cart/shopping-cart-item.model';
 import { User } from 'src/users/users.model';
+import { OrderItem } from './order-item.model';
 
 @Table({ tableName: 'orders' })
 export class Order extends Model<Order> {
@@ -30,8 +31,8 @@ export class Order extends Model<Order> {
   @BelongsTo(() => User)
   user: User;
 
-  @HasMany(() => ShoppingCartItem)
-  items: ShoppingCartItem[];
+  @HasMany(() => OrderItem)
+  items: OrderItem[];
 
   @Column({ type: DataType.FLOAT })
   totalPrice: number;

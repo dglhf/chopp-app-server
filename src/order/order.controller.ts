@@ -1,4 +1,14 @@
-import { Controller, UseGuards, Get, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  UseGuards,
+  Req,
+  Get,
+  Query,
+  Param,
+  ParseIntPipe,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -12,13 +22,32 @@ import { PaymentsService } from 'src/payment/payments.service';
 import { GetOrdersResponseDto } from './dto/get-orders-response.dto';
 import { PaginationResponse } from 'src/shared/types/pagination-response';
 import { Order } from './order.model';
+import { CreatePaymentResponseDto } from 'src/payment/dto/create-payment-response.dto';
+import { CreateOrderDto } from './dto/create-order.dto';
 
 @ApiTags('orders')
 @ApiBearerAuth()
 @Controller('orders')
 @UseGuards(JwtAuthGuard)
 export class OrderController {
-  constructor(private readonly orderService: OrderService) {}
+  constructor(
+    private readonly orderService: OrderService,
+    private readonly paymentService: PaymentsService,
+  ) {}
+
+  @Post()
+  @ApiOperation({ summary: 'Создать новый заказ и инициировать платеж' })
+  @ApiResponse({
+    status: 201,
+    description: 'Заказ успешно создан, и платеж инициирован',
+    type: CreatePaymentResponseDto,
+  })
+  @ApiResponse({ status: 403, description: 'Доступ запрещен' })
+  async createOrder(@Req() req: any): Promise<CreatePaymentResponseDto> {
+    return this.orderService.createOrder(req.user.id);
+  }
+
+  // order.controller.ts
 
   @Get()
   @ApiOperation({ summary: 'Get list of orders' })
@@ -77,5 +106,17 @@ export class OrderController {
       sort,
       order,
     });
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Получить заказ по ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Данные заказа успешно получены.',
+    type: Order,
+  })
+  @ApiResponse({ status: 404, description: 'Заказ не найден.' })
+  async getOrderById(@Param('id', ParseIntPipe) id: number): Promise<Order> {
+    return this.orderService.findOneOrder(id);
   }
 }
