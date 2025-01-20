@@ -108,7 +108,7 @@ export class OrderController {
     @Query('limit') limit: number = 10,
     @Query('search') search: string = '',
     @Query('sort') sort: string = 'createdAt',
-    @Query('order') order: 'ASC' | 'DESC' = 'ASC',
+    @Query('order') order: 'ASC' | 'DESC' = 'DESC',
     @Req() req: any,
   ): Promise<PaginationResponse<Order>> {
     const userId = req.user.id;

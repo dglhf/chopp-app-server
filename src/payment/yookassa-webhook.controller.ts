@@ -13,19 +13,21 @@ export class YooKassaWebhookController {
   async handleWebhook(@Body() payload: any): Promise<{ status: string }> {
     const { event, object } = payload;
 
+    console.log('----payload: ', payload)
     console.log('--handleWebhook event--', event)
     console.log('--handleWebhook object--', object)
 
     switch (event) {
       case 'payment.succeeded':
-        await this.subscriptionService.updateSubscriptionStatus(object.id, 'succeeded');
-        await this.orderService.updateOrderPaymentStatus(object.id, 'succeeded'); // Используем метод из OrderService
+        console.log('--here--')
+          await this.orderService.updateOrderPaymentStatus(object.id, 'succeeded'); // Используем метод из OrderService
+          await this.subscriptionService.updateSubscriptionStatus(object.id, 'succeeded');
         await this.subscriptionService.removeSubscription(object.id);
         break;
 
       case 'payment.canceled':
-        await this.subscriptionService.updateSubscriptionStatus(object.id, 'canceled');
-        await this.orderService.updateOrderPaymentStatus(object.id, 'canceled'); // Используем метод из OrderService
+          await this.orderService.updateOrderPaymentStatus(object.id, 'canceled'); // Используем метод из OrderService
+          await this.subscriptionService.updateSubscriptionStatus(object.id, 'canceled');
         await this.subscriptionService.removeSubscription(object.id);
         break;
 

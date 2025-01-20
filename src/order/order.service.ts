@@ -36,6 +36,8 @@ export class OrderService {
         order: [['createdAt', 'DESC']],
       });
 
+      console.log('lastOrder.orderStatus: ', lastOrder)
+
       if (lastOrder && lastOrder.orderStatus !== 'finished') {
         throw new Error('Дождитесь завершения предыдущего заказа.');
       }
@@ -264,6 +266,7 @@ export class OrderService {
       );
     }
 
+    order.orderStatus = `payment_${status}`;
     order.paymentStatus = status;
     await order.save();
   }
