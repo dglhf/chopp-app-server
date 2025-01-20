@@ -3,19 +3,20 @@ import { HttpService } from '@nestjs/axios';
 import { randomBytes } from 'crypto';
 import { YOOKASSA_URL } from './constants';
 import { CreateRefundDto } from 'src/order/dto/create-refund.dto';
-import { GetRefundsResponseDto } from 'src/order/dto/get-refunds-response.dto';
 import { GetRefundResponseDto } from 'src/order/dto/get-refund-response.dto';
 import { InjectModel } from '@nestjs/sequelize';
 import { Product } from 'src/products/product.model';
-import { ShoppingCartItem } from 'src/shopping-cart/shopping-cart-item.model';
-import { ShoppingCart } from 'src/shopping-cart/shopping-cart.model';
 import { CapturePaymentDto } from './dto/capture-payment.dto';
+import { Order } from 'src/order/order.model';
+import { OrderItem } from 'src/order/order-item.model';
+import { YooKassaWebhookSubscriptionService } from './yookassa-webhook-subscription.service';
 
 @Injectable()
 export class PaymentsService {
   constructor(
     private httpService: HttpService,
-    @InjectModel(ShoppingCart) private shoppingCartModel: typeof ShoppingCart,
+    private subscriptionService: YooKassaWebhookSubscriptionService,
+    @InjectModel(Order) private orderModel: typeof Order,
   ) {}
 
   async createPayment({
@@ -34,13 +35,13 @@ export class PaymentsService {
     const shopId = process.env.YOOKASSA_SHOP_ID;
     const secretKey = process.env.YOOKASSA_SECRET_KEY;
     const auth = Buffer.from(`${shopId}:${secretKey}`).toString('base64');
-  
+
     const headers = {
       Authorization: `Basic ${auth}`,
       'Content-Type': 'application/json',
       'Idempotence-Key': this.generateIdempotenceKey(),
     };
-  
+
     const body = {
       amount: {
         value: amount,
@@ -57,7 +58,7 @@ export class PaymentsService {
       description: description,
       metadata: metadata,
     };
-  
+
     try {
       const response = await this.httpService
         .post(`${YOOKASSA_URL}/payments`, body, { headers })
@@ -71,7 +72,66 @@ export class PaymentsService {
       );
     }
   }
-  
+
+  async payForOrder(orderId: number): Promise<any> {
+    // Найти заказ по ID
+    const order = await this.orderModel.findOne({
+      where: { id: orderId },
+      include: [
+        {
+          model: OrderItem,
+          include: [
+            {
+              model: Product,
+            },
+          ],
+        },
+      ],
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Order with ID ${orderId} not found.`);
+    }
+
+    // Проверить статус заказа
+    if (order.paymentStatus !== 'pending') {
+      throw new Error(
+        `Order with ID ${orderId} cannot be paid. Current payment status: ${order.paymentStatus}`,
+      );
+    }
+
+    // Создание платежа
+    const paymentResult = await this.createPayment({
+      amount: order.totalPrice.toString(),
+      currency: 'RUB',
+      description: `Оплата за заказ ${order.id}`,
+      returnUrl: `${process.env.FRONTEND_URL}/order-confirmation/${order.id}`,
+      metadata: { order_id: order.id },
+    });
+
+    // Обновление информации о платеже в заказе
+    order.transactionId = paymentResult.id;
+    order.paymentStatus = 'pending';
+    order.paymentUrl = paymentResult.confirmation.confirmation_url;
+    await order.save();
+
+    // Добавить подписку на вебхук
+    await this.subscriptionService.createSubscription({
+      transactionId: paymentResult.id,
+      orderId,
+      status: 'pending',
+    });
+
+    return {
+      id: order.id,
+      totalPrice: order.totalPrice,
+      quantity: order.quantity,
+      orderStatus: order.orderStatus,
+      paymentStatus: order.paymentStatus,
+      transactionId: order.transactionId,
+      paymentUrl: order.paymentUrl,
+    };
+  }
 
   async getPayments(params: {
     limit?: number;

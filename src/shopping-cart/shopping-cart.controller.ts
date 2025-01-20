@@ -25,15 +25,15 @@ import { RolesGuard } from 'src/auth/roles-auth.guard';
 export class ShoppingCartController {
   constructor(private readonly shoppingCartService: ShoppingCartService) {}
 
-  @Get(':id?')
+  @Get()
   @ApiOperation({ summary: 'Get shopping cart by user ID for admin or for logged-in user' })
   @ApiResponse({
     status: 200,
     description: 'Returned the shopping cart for the user.',
     type: ShoppingCartDto,
   })
-  async getShoppingCart(@Req() req: any, @Param('id') id?: number): Promise<ShoppingCartDto> {
-    const userId = id || req.user.id;
+  async getShoppingCart(@Req() req: any): Promise<ShoppingCartDto> {
+    const userId = req.user.id;
     return await this.shoppingCartService.getShoppingCart(userId);
   }
 

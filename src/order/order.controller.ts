@@ -47,49 +47,60 @@ export class OrderController {
     return this.orderService.createOrder(req.user.id);
   }
 
-  // order.controller.ts
+  @Get('/lastOrder')
+  @ApiOperation({ summary: 'Получить последний по дате заказ пользователя' })
+  @ApiResponse({
+    status: 200,
+    description: 'Текущий заказ успешно получен.',
+    type: Order,
+  })
+  @ApiResponse({ status: 404, description: 'Заказы пользователя не найдены.' })
+  async getCurrentOrder(@Req() req: any): Promise<Order> {
+    const userId = req.user.id;
+    return this.orderService.findLastOrder(userId);
+  }
 
   @Get()
-  @ApiOperation({ summary: 'Get list of orders' })
+  @ApiOperation({ summary: 'Получить список заказов' })
   @ApiQuery({
     name: 'page',
     type: 'number',
     required: false,
-    description: 'Page number',
+    description: 'Номер страницы',
     example: 1,
   })
   @ApiQuery({
     name: 'limit',
     type: 'number',
     required: false,
-    description: 'Limit of orders per page',
+    description: 'Количество заказов на странице',
     example: 10,
   })
   @ApiQuery({
     name: 'search',
     type: 'string',
     required: false,
-    description: 'Search by order details',
-    example: '', // Пример зависит от того, какой тип поиска вы ожидаете (например, поиск по имени заказа)
+    description: 'Поиск по деталям заказа',
+    example: '',
   })
   @ApiQuery({
     name: 'sort',
     type: 'string',
     required: false,
-    description: 'Sort key',
-    example: 'createdAt', // Укажите здесь ваше значение по умолчанию для сортировки, если оно есть
+    description: 'Ключ сортировки',
+    example: 'createdAt',
   })
   @ApiQuery({
     name: 'order',
     type: 'string',
     required: false,
-    description: 'Sort order',
+    description: 'Порядок сортировки',
     enum: ['ASC', 'DESC'],
     example: 'ASC',
   })
   @ApiResponse({
     status: 200,
-    description: 'Orders successfully retrieved',
+    description: 'Список заказов успешно получен',
     type: [GetOrdersResponseDto],
   })
   async getAllOrders(
@@ -98,13 +109,20 @@ export class OrderController {
     @Query('search') search: string = '',
     @Query('sort') sort: string = 'createdAt',
     @Query('order') order: 'ASC' | 'DESC' = 'ASC',
+    @Req() req: any,
   ): Promise<PaginationResponse<Order>> {
+    const userId = req.user.id;
+    const isAdmin = req.user.roles.some((role: any) =>
+      typeof role === 'string' ? role === 'ADMIN' : role.value === 'ADMIN',
+    );
+
     return this.orderService.findAllOrders({
       page,
       limit,
       search,
       sort,
       order,
+      userId: isAdmin ? undefined : userId, // Если админ, возвращаем все заказы, иначе только для текущего пользователя
     });
   }
 

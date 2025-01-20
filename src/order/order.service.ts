@@ -21,6 +21,8 @@ export class OrderService {
     @InjectModel(Order) private orderModel: typeof Order,
     @InjectModel(OrderItem) private orderItemModel: typeof OrderItem,
     @InjectModel(ShoppingCart) private shoppingCartModel: typeof ShoppingCart,
+    @InjectModel(ShoppingCartItem)
+    private shoppingCartItemModel: typeof ShoppingCartItem,
     private paymentService: PaymentsService,
   ) {}
 
@@ -28,6 +30,16 @@ export class OrderService {
     const transaction = await this.orderModel.sequelize.transaction();
 
     try {
+      // Проверка статуса последнего заказа пользователя
+      const lastOrder = await this.orderModel.findOne({
+        where: { userId },
+        order: [['createdAt', 'DESC']],
+      });
+
+      if (lastOrder && lastOrder.orderStatus !== 'finished') {
+        throw new Error('Дождитесь завершения предыдущего заказа.');
+      }
+
       // Получение корзины пользователя
       const cart = await this.shoppingCartModel.findOne({
         where: { userId },
@@ -35,8 +47,15 @@ export class OrderService {
         transaction,
       });
 
-      if (!cart || !cart.items.length) {
+      if (!cart) {
         throw new NotFoundException('Корзина пуста или не найдена.');
+      }
+
+      // Проверка на пустую корзину
+      if (!cart.items.length) {
+        throw new NotFoundException(
+          'Корзина пуста. Добавьте товары перед оформлением заказа.',
+        );
       }
 
       // Создание заказа
@@ -79,6 +98,14 @@ export class OrderService {
       order.paymentUrl = paymentResult.confirmation.confirmation_url;
       await order.save({ transaction });
 
+      // Очистка корзины пользователя
+      await this.shoppingCartItemModel.destroy({
+        where: { shoppingCartId: cart.id },
+        transaction,
+      });
+
+      await cart.update({ totalPrice: 0, quantity: 0 }, { transaction });
+
       await transaction.commit();
 
       // Получение полной информации о заказе
@@ -113,17 +140,47 @@ export class OrderService {
     }
   }
 
+  async findLastOrder(userId: number): Promise<Order> {
+    const order = await this.orderModel.findOne({
+      where: { userId },
+      order: [['createdAt', 'DESC']],
+      include: [
+        {
+          model: OrderItem,
+          include: [
+            {
+              model: Product,
+              include: [
+                { model: FileModel, as: 'images' },
+                { model: Category },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    if (!order) {
+      throw new NotFoundException('Заказ не найден.');
+    }
+
+    return order;
+  }
+
   async findAllOrders({
     page = 1,
     limit = 10,
     search,
     sort = 'createdAt',
     order = 'ASC',
-  }: PaginationQuery): Promise<PaginationResponse<Order>> {
+    userId,
+  }: PaginationQuery & { userId?: number }): Promise<
+    PaginationResponse<Order>
+  > {
     const offset = (page - 1) * limit;
 
     // Условие для поиска
-    const whereCondition = search
+    const whereCondition: any = search
       ? {
           [Op.or]: [
             { title: { [Op.iLike]: `%${search}%` } },
@@ -131,6 +188,11 @@ export class OrderService {
           ],
         }
       : {};
+
+    console.log('--userId: ', userId);
+    if (userId) {
+      whereCondition.userId = userId; // Фильтруем заказы по ID пользователя
+    }
 
     // Запрос с полным включением связанных данных
     const { rows: orders, count: totalItems } =
@@ -188,5 +250,21 @@ export class OrderService {
     }
 
     return order;
+  }
+
+  async updateOrderPaymentStatus(
+    transactionId: string,
+    status: string,
+  ): Promise<void> {
+    const order = await this.orderModel.findOne({ where: { transactionId } });
+
+    if (!order) {
+      throw new NotFoundException(
+        `Заказ с transactionId ${transactionId} не найден.`,
+      );
+    }
+
+    order.paymentStatus = status;
+    await order.save();
   }
 }

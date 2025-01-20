@@ -30,6 +30,7 @@ import { OrderModule } from './order/order.module';
 import { Order } from './order/order.model';
 import { PaymentsModule } from './payment/payments.module';
 import { OrderItem } from './order/order-item.model';
+import { Subscription } from './payment/subscription.model';
 
 @Module({
   imports: [
@@ -62,7 +63,8 @@ import { OrderItem } from './order/order-item.model';
         ShoppingCart,
         ShoppingCartItem,
         Order,
-        OrderItem
+        OrderItem,
+        Subscription
       ],
       autoLoadModels: true,
     }),
