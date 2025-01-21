@@ -9,13 +9,13 @@ import { Product } from 'src/products/product.model';
 import { CapturePaymentDto } from './dto/capture-payment.dto';
 import { Order } from 'src/order/order.model';
 import { OrderItem } from 'src/order/order-item.model';
-import { YooKassaWebhookSubscriptionService } from './yookassa-webhook-subscription.service';
+import { YooKassaWebhookService } from './yookassa-webhook.service';
 
 @Injectable()
 export class PaymentsService {
   constructor(
     private httpService: HttpService,
-    private subscriptionService: YooKassaWebhookSubscriptionService,
+    private subscriptionService: YooKassaWebhookService,
     @InjectModel(Order) private orderModel: typeof Order,
   ) {}
 

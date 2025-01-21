@@ -1,11 +1,11 @@
 import { Controller, Post, Body } from '@nestjs/common';
-import { YooKassaWebhookSubscriptionService } from './yookassa-webhook-subscription.service';
+import { YooKassaWebhookService } from './yookassa-webhook.service';
 import { OrderService } from 'src/order/order.service';
 
 @Controller('yookassa/webhook')
 export class YooKassaWebhookController {
   constructor(
-    private readonly subscriptionService: YooKassaWebhookSubscriptionService,
+    private readonly subscriptionService: YooKassaWebhookService,
     private readonly orderService: OrderService, // Инжектируем OrderService
   ) {}
 
@@ -13,13 +13,8 @@ export class YooKassaWebhookController {
   async handleWebhook(@Body() payload: any): Promise<{ status: string }> {
     const { event, object } = payload;
 
-    console.log('----payload: ', payload)
-    console.log('--handleWebhook event--', event)
-    console.log('--handleWebhook object--', object)
-
     switch (event) {
       case 'payment.succeeded':
-        console.log('--here--')
           await this.orderService.updateOrderPaymentStatus(object.id, 'succeeded'); // Используем метод из OrderService
           await this.subscriptionService.updateSubscriptionStatus(object.id, 'succeeded');
         await this.subscriptionService.removeSubscription(object.id);
