@@ -1,3 +1,4 @@
 export enum ORDER_STATUS {
-    PENDING = 'pending'
+    FINISHED = 'finished',
+    AWAITING_PAYMENT = 'awaitingPayment'
 }

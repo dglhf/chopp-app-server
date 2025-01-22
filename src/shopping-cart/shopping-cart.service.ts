@@ -95,7 +95,6 @@ export class ShoppingCartService implements OnModuleInit {
     items: { productId: number; quantity: number }[],
   ): Promise<{ items: any[]; totalPrice: number; quantity: number }> {
     const transaction = await this.shoppingCartModel.sequelize.transaction();
-  
     try {
       let cart = await this.shoppingCartModel.findOne({
         where: { userId },
