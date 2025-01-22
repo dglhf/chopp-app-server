@@ -12,14 +12,18 @@ import { YooKassaWebhookController } from './yookassa-webhook.controller';
 import { OrderService } from 'src/order/order.service';
 import { OrderItem } from 'src/order/order-item.model';
 import { ShoppingCartItem } from 'src/shopping-cart/shopping-cart-item.model';
+import { NotificationModule } from 'src/websockets/notification/notification.module';
+import { OrderModule } from 'src/order/order.module';
 
 @Module({
   imports: [
     HttpModule,
     forwardRef(() => AuthModule),
+    forwardRef(() => NotificationModule),
+    forwardRef(() => OrderModule),
     SequelizeModule.forFeature([Order, Subscription, OrderItem, ShoppingCart, ShoppingCartItem]),
   ],
-  providers: [PaymentsService, YooKassaWebhookService, OrderService],
+  providers: [PaymentsService, YooKassaWebhookService],
   controllers: [PaymentsController, YooKassaWebhookController],
   exports: [PaymentsService],
 })

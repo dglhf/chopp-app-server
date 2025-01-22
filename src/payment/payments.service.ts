@@ -10,13 +10,17 @@ import { CapturePaymentDto } from './dto/capture-payment.dto';
 import { Order } from 'src/order/order.model';
 import { OrderItem } from 'src/order/order-item.model';
 import { YooKassaWebhookService } from './yookassa-webhook.service';
+import { NotificationService } from 'src/websockets/notification/notification.service';
+import { WS_MESSAGE_TYPE } from 'src/shared/enums/';
+import { User } from 'src/users/users.model';
 
 @Injectable()
 export class PaymentsService {
   constructor(
+    @InjectModel(Order) private orderModel: typeof Order,
     private httpService: HttpService,
     private subscriptionService: YooKassaWebhookService,
-    @InjectModel(Order) private orderModel: typeof Order,
+    private notificationService: NotificationService,
   ) {}
 
   async createPayment({
@@ -25,12 +29,16 @@ export class PaymentsService {
     description,
     returnUrl,
     metadata,
+    user,
+    items,
   }: {
     amount: string;
     currency: string;
     description: string;
     returnUrl: string;
     metadata: Record<string, any>;
+    user: User;
+    items: OrderItem[];
   }): Promise<any> {
     const shopId = process.env.YOOKASSA_SHOP_ID;
     const secretKey = process.env.YOOKASSA_SECRET_KEY;
@@ -41,6 +49,8 @@ export class PaymentsService {
       'Content-Type': 'application/json',
       'Idempotence-Key': this.generateIdempotenceKey(),
     };
+
+    const receipt = this.createReceipt({ items, user });
 
     const body = {
       amount: {
@@ -57,18 +67,20 @@ export class PaymentsService {
       capture: true,
       description: description,
       metadata: metadata,
+      receipt,
     };
 
     try {
-      const response = await this.httpService
-        .post(`${YOOKASSA_URL}/payments`, body, { headers })
-        .toPromise();
+      await this.notificationService.sendNotificationToAdmin<typeof body>({
+        type: WS_MESSAGE_TYPE.NEW_PAYMENT,
+        payload: body,
+      });
+
+      const response = await this.httpService.post(`${YOOKASSA_URL}/payments`, body, { headers }).toPromise();
       return response.data;
     } catch (error) {
       throw new NotFoundException(
-        `Failed to initiate payment. ${String(
-          error?.response?.data?.description || error?.response?.data,
-        )}`,
+        `Failed to initiate payment. ${String(error?.response?.data?.description || error?.response?.data)}`,
       );
     }
   }
@@ -86,6 +98,10 @@ export class PaymentsService {
             },
           ],
         },
+        {
+          model: User, // Включаем пользователя
+          attributes: ['id', 'email', 'phoneNumber'], // Указываем, какие поля включать
+        },
       ],
     });
 
@@ -95,9 +111,7 @@ export class PaymentsService {
 
     // Проверить статус заказа
     if (order.paymentStatus !== 'pending') {
-      throw new Error(
-        `Order with ID ${orderId} cannot be paid. Current payment status: ${order.paymentStatus}`,
-      );
+      throw new Error(`Order with ID ${orderId} cannot be paid. Current payment status: ${order.paymentStatus}`);
     }
 
     // Создание платежа
@@ -107,6 +121,8 @@ export class PaymentsService {
       description: `Оплата за заказ ${order.id}`,
       returnUrl: `${process.env.FRONTEND_URL}/order-confirmation/${order.id}`,
       metadata: { order_id: order.id },
+      user: order.user,
+      items: order.items,
     });
 
     // Обновление информации о платеже в заказе
@@ -144,9 +160,7 @@ export class PaymentsService {
     status?: string;
   }): Promise<any> {
     const url = `${YOOKASSA_URL}/payments`;
-    const auth = Buffer.from(
-      `${process.env.YOOKASSA_SHOP_ID}:${process.env.YOOKASSA_SECRET_KEY}`,
-    ).toString('base64');
+    const auth = Buffer.from(`${process.env.YOOKASSA_SHOP_ID}:${process.env.YOOKASSA_SECRET_KEY}`).toString('base64');
     const headers = {
       Authorization: `Basic ${auth}`,
       'Content-Type': 'application/json',
@@ -185,16 +199,11 @@ export class PaymentsService {
 
       return response.data;
     } catch (error) {
-      throw new NotFoundException(
-        `Payment with ID ${paymentId} not found. ${String(error.response.data)}`,
-      );
+      throw new NotFoundException(`Payment with ID ${paymentId} not found. ${String(error.response.data)}`);
     }
   }
 
-  async capturePayment(
-    paymentId: string,
-    captureData?: CapturePaymentDto,
-  ): Promise<any> {
+  async capturePayment(paymentId: string, captureData?: CapturePaymentDto): Promise<any> {
     //TODO: YOOKASSA_SHOP_ID хранить в базе для каждого конкретного заказчика
     const shopId = process.env.YOOKASSA_SHOP_ID;
     const secretKey = process.env.YOOKASSA_SECRET_KEY;
@@ -212,9 +221,7 @@ export class PaymentsService {
 
       return response.data;
     } catch (error) {
-      throw new NotFoundException(
-        `Failed to capture payment: ${paymentId}. ${String(error.response.data)}`,
-      );
+      throw new NotFoundException(`Failed to capture payment: ${paymentId}. ${String(error.response.data)}`);
     }
   }
 
@@ -240,9 +247,7 @@ export class PaymentsService {
 
       return response.data;
     } catch (error) {
-      throw new NotFoundException(
-        `Failed to cancel payment. ${String(error.response.data)}`,
-      );
+      throw new NotFoundException(`Failed to cancel payment. ${String(error.response.data)}`);
     }
   }
 
@@ -267,9 +272,7 @@ export class PaymentsService {
       return response.data;
     } catch (error) {
       console.log('error: ', error.response.data);
-      throw new NotFoundException(
-        `Failed to refund payment ${refundData.payment_id}. ${String(error.response.data)}`,
-      );
+      throw new NotFoundException(`Failed to refund payment ${refundData.payment_id}. ${String(error.response.data)}`);
     }
   }
 
@@ -284,9 +287,7 @@ export class PaymentsService {
     status?: string;
   }): Promise<any> {
     const url = `${YOOKASSA_URL}/refunds`;
-    const auth = Buffer.from(
-      `${process.env.YOOKASSA_SHOP_ID}:${process.env.YOOKASSA_SECRET_KEY}`,
-    ).toString('base64');
+    const auth = Buffer.from(`${process.env.YOOKASSA_SHOP_ID}:${process.env.YOOKASSA_SECRET_KEY}`).toString('base64');
     const headers = {
       Authorization: `Basic ${auth}`,
       'Content-Type': 'application/json',
@@ -301,9 +302,7 @@ export class PaymentsService {
         .toPromise();
       return response.data;
     } catch (error) {
-      throw new NotFoundException(
-        `Failed to retrieve refunds. ${String(error.response.data)}`,
-      );
+      throw new NotFoundException(`Failed to retrieve refunds. ${String(error.response.data)}`);
     }
   }
 
@@ -325,14 +324,77 @@ export class PaymentsService {
 
       return response.data;
     } catch (error) {
-      throw new NotFoundException(
-        `Failed to retrieve refund with ID: ${refundId}. ${String(error.response.data)}`,
-      );
+      throw new NotFoundException(`Failed to retrieve refund with ID: ${refundId}. ${String(error.response.data)}`);
     }
   }
 
   private generateIdempotenceKey(): string {
     // Генерация ключа идемпотентности, например, UUID
     return randomBytes(16).toString('hex');
+  }
+
+  private createReceipt({ items, user }: { items: OrderItem[]; user: User }): {
+    customer: { email: string; phone?: string };
+    items: Array<{
+      description: string;
+      quantity: number;
+      amount: { value: string; currency: string };
+      vat_code: number;
+    }>;
+  } {
+    // Формируем данные о клиенте
+    const customer = {
+      email: user.email,
+      phone: user.phoneNumber,
+    };
+
+    // Формируем позиции чека
+    const receiptItems = items.map((item) => ({
+      description: item.product.title,
+      quantity: item.quantity,
+      amount: {
+        value: (item.product.price * item.quantity).toFixed(2), // Считаем сумму за позицию
+        currency: 'RUB',
+      },
+      //TODO: Ставка НДС (тег в 54 ФЗ — 1199) - хз че это, выяснить
+      vat_code: 1199, // Используем переданный НДС или дефолтный
+    }));
+
+    return {
+      customer,
+      items: receiptItems,
+    };
+  }
+
+  async getReceipts(params: {
+    limit?: number;
+    cursor?: string;
+    created_at_gte?: string;
+    created_at_gt?: string;
+    created_at_lte?: string;
+    created_at_lt?: string;
+    status?: string;
+  }): Promise<any> {
+    const url = `${YOOKASSA_URL}/receipts`;
+    const auth = Buffer.from(`${process.env.YOOKASSA_SHOP_ID}:${process.env.YOOKASSA_SECRET_KEY}`).toString('base64');
+    const headers = {
+      Authorization: `Basic ${auth}`,
+      'Content-Type': 'application/json',
+    };
+
+    try {
+      const response = await this.httpService
+        .get(url, {
+          headers,
+          params, // Передача фильтров как параметров запроса
+        })
+        .toPromise();
+
+      return response.data;
+    } catch (error) {
+      throw new NotFoundException(
+        `Failed to retrieve receipts. ${String(error.response?.data?.description || error.response?.data)}`,
+      );
+    }
   }
 }

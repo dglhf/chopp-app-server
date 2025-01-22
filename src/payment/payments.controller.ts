@@ -260,4 +260,70 @@ export class PaymentsController {
   ): Promise<GetRefundResponseDto> {
     return this.paymentService.getRefundById(refundId);
   }
+
+  @Get('/receipts')
+@ApiOperation({ summary: 'Получить список чеков' })
+@ApiResponse({
+  status: 200,
+  description: 'Список чеков успешно получен',
+})
+@ApiQuery({
+  name: 'limit',
+  required: false,
+  type: Number,
+  description: 'Ограничение количества возвращаемых чеков',
+})
+@ApiQuery({
+  name: 'cursor',
+  required: false,
+  type: String,
+  description: 'Курсор для пагинации',
+})
+@ApiQuery({
+  name: 'created_at_gte',
+  required: false,
+  type: String,
+  description: 'Фильтр по времени создания: больше или равно',
+})
+@ApiQuery({
+  name: 'created_at_gt',
+  required: false,
+  type: String,
+  description: 'Фильтр по времени создания: строго больше',
+})
+@ApiQuery({
+  name: 'created_at_lte',
+  required: false,
+  type: String,
+  description: 'Фильтр по времени создания: меньше или равно',
+})
+@ApiQuery({
+  name: 'created_at_lt',
+  required: false,
+  type: String,
+  description: 'Фильтр по времени создания: строго меньше',
+})
+@ApiQuery({
+  name: 'status',
+  required: false,
+  type: String,
+  description: 'Фильтр по статусу чека',
+})
+@Roles('ADMIN')
+@UseGuards(RolesGuard)
+async getReceipts(
+  @Query()
+  queryParams: {
+    limit?: number;
+    cursor?: string;
+    created_at_gte?: string;
+    created_at_gt?: string;
+    created_at_lte?: string;
+    created_at_lt?: string;
+    status?: string;
+  },
+): Promise<any> {
+  return this.paymentService.getReceipts(queryParams);
+}
+
 }

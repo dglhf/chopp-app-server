@@ -7,17 +7,26 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { WsJwtMiddleware } from '../middlewares/ws-jwt-middleware';
+import { BaseGateway } from '../gateways/base.gateway';
+import { WsMessage } from 'src/shared/types';
 
 @WebSocketGateway({ cors: true })
-export class NotificationGateway {
+export class NotificationGateway extends BaseGateway  {
   @WebSocketServer()
   private server: Server;
 
-  // Метод для отправки уведомления
-  async sendNotificationToClients(
-    recipientUserIds: number[], // Массив userId, которым нужно отправить уведомления
-    message: any, // Сообщение для отправки
+  constructor(
+    jwtMiddleware: WsJwtMiddleware,
   ) {
+    super(jwtMiddleware);
+  }
+
+  // Метод для отправки уведомления
+  async sendNotificationToClients<T>(
+    recipientUserIds: number[], // Массив userId, которым нужно отправить уведомления
+    message: WsMessage<T>, // Сообщение для отправки
+  ) {
+    console.log('----sendNotificationToClientsL: ', recipientUserIds)
     const activeSockets = Array.from(this.server.sockets.sockets.values());
     const activeSessions = activeSockets.map((socket: Socket) => ({
       socketId: socket?.id,
@@ -34,6 +43,4 @@ export class NotificationGateway {
       this.server.to(session.socketId).emit('notification', message);
     }
   }
-
-  
 }

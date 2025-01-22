@@ -22,10 +22,9 @@ export class ChatsGateway extends BaseGateway {
 
   constructor(
     jwtMiddleware: WsJwtMiddleware,
-    activeSessionService: ActiveSessionService,
     private chatsService: ChatsService,
   ) {
-    super(jwtMiddleware, activeSessionService);
+    super(jwtMiddleware);
   }
 
   @SubscribeMessage('message')

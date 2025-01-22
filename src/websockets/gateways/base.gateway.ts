@@ -7,7 +7,7 @@ import { Injectable } from '@nestjs/common';
 import { Socket } from 'socket.io';
 import { WsJwtMiddleware } from '../middlewares/ws-jwt-middleware';
 import { ActiveSessionService } from '../active-sessions/active-session.service';
-import { WS_MESSAGE_TYPE } from '../constants/ws-message-types';
+import { WS_MESSAGE_TYPE } from 'src/shared/enums';
 
 @Injectable() // Указываем, что базовый класс поддерживает DI
 export abstract class BaseGateway
@@ -15,7 +15,7 @@ export abstract class BaseGateway
 {
   constructor(
     private readonly jwtMiddleware: WsJwtMiddleware,
-    private readonly activeSessionService: ActiveSessionService,
+    // private readonly activeSessionService: ActiveSessionService,
   ) {} // DI для JwtMiddleware
 
   async handleConnection(@ConnectedSocket() client: Socket) {
@@ -24,7 +24,7 @@ export abstract class BaseGateway
       const { payload: user, error } = this.jwtMiddleware.validate(client);
       if (error) {
         return client.emit('tokenExpired', {
-          type: WS_MESSAGE_TYPE.TOKEN_EXPIRED,
+          type: 'tokenExpired',
           payload: error,
           //     //     type: 'message',
           //     //     message: 'Thank you for your message. We are looking into it.',
@@ -37,7 +37,7 @@ export abstract class BaseGateway
       client.data.user = user;
 
       // Обновление или создание записи о сессии
-      await this.activeSessionService.upsertSession(user.id, client.id);
+      // await this.activeSessionService.upsertSession(user.id, client.id);
 
       console.log(`User ${user.id} connected with sid ${client.id}`);
     } catch (error) {
@@ -51,7 +51,7 @@ export abstract class BaseGateway
       const user = client.data.user;
       if (user) {
         // Удаление записи о сессии
-        await this.activeSessionService.removeSession(client.id);
+        // await this.activeSessionService.removeSession(client.id);
         console.log(`User ${user.id} disconnected (sid: ${client.id})`);
       }
     } catch (error) {

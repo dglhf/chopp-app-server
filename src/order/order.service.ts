@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Order } from './order.model';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { ORDER_STATUS, PAYMENT_STATUS } from 'src/shared/enums';
+import { ORDER_STATUS, PAYMENT_STATUS, WS_MESSAGE_TYPE } from 'src/shared/enums';
 import { CreatePaymentResponseDto } from '../payment/dto/create-payment-response.dto';
 import { ShoppingCartItem } from 'src/shopping-cart/shopping-cart-item.model';
 import { Op } from 'sequelize';
@@ -14,6 +14,8 @@ import { PaginationResponse } from 'src/shared/types/pagination-response';
 import { PaginationQuery } from 'src/shared/types';
 import { Category } from 'src/categories/category.model';
 import { FileModel } from 'src/files/file.model';
+import { NotificationService } from 'src/websockets/notification/notification.service';
+import { User } from 'src/users/users.model';
 
 @Injectable()
 export class OrderService {
@@ -21,9 +23,10 @@ export class OrderService {
     @InjectModel(Order) private orderModel: typeof Order,
     @InjectModel(OrderItem) private orderItemModel: typeof OrderItem,
     @InjectModel(ShoppingCart) private shoppingCartModel: typeof ShoppingCart,
-    @InjectModel(ShoppingCartItem)
-    private shoppingCartItemModel: typeof ShoppingCartItem,
+    @InjectModel(User) private userModel: typeof User,
+    @InjectModel(ShoppingCartItem) private shoppingCartItemModel: typeof ShoppingCartItem,
     private paymentService: PaymentsService,
+    private notificationService: NotificationService,
   ) {}
 
   async createOrder(userId: number): Promise<CreatePaymentResponseDto> {
@@ -35,8 +38,6 @@ export class OrderService {
         where: { userId },
         order: [['createdAt', 'DESC']],
       });
-
-      console.log('lastOrder.orderStatus: ', lastOrder)
 
       if (lastOrder && lastOrder.orderStatus !== 'finished') {
         throw new Error('Дождитесь завершения предыдущего заказа.');
@@ -55,9 +56,7 @@ export class OrderService {
 
       // Проверка на пустую корзину
       if (!cart.items.length) {
-        throw new NotFoundException(
-          'Корзина пуста. Добавьте товары перед оформлением заказа.',
-        );
+        throw new NotFoundException('Корзина пуста. Добавьте товары перед оформлением заказа.');
       }
 
       // Создание заказа
@@ -85,6 +84,18 @@ export class OrderService {
         );
       }
 
+      const user = await this.userModel.findOne({
+        where: { id: userId },
+        transaction,
+      });
+
+      // Загрузить связанные позиции заказа
+const items = await this.orderItemModel.findAll({
+  where: { orderId: order.id },
+  include: [{ model: Product }],
+  transaction,
+});
+
       // Вызов метода создания платежа
       const paymentResult = await this.paymentService.createPayment({
         amount: order.totalPrice.toString(),
@@ -92,6 +103,8 @@ export class OrderService {
         description: `Оплата за заказ ${order.id}`,
         returnUrl: `${process.env.FRONTEND_URL}/order-confirmation/${order.id}`,
         metadata: { order_id: order.id },
+        user,
+        items
       });
 
       // Обновление заказа после создания платежа
@@ -110,6 +123,11 @@ export class OrderService {
 
       await transaction.commit();
 
+      await this.notificationService.sendNotificationToAdmin<Order>({
+        type: WS_MESSAGE_TYPE.NEW_ORDER,
+        payload: order,
+      });
+
       // Получение полной информации о заказе
       const fullOrder = await this.orderModel.findOne({
         where: { id: order.id },
@@ -119,10 +137,7 @@ export class OrderService {
             include: [
               {
                 model: Product,
-                include: [
-                  { model: FileModel, as: 'images' },
-                  { model: Category },
-                ],
+                include: [{ model: FileModel, as: 'images' }, { model: Category }],
               },
             ],
           },
@@ -136,9 +151,7 @@ export class OrderService {
       return fullOrder.toJSON() as CreatePaymentResponseDto;
     } catch (error) {
       await transaction.rollback();
-      throw new NotFoundException(
-        `Ошибка при создании заказа или инициации платежа: ${String(error)}`,
-      );
+      throw new NotFoundException(`Ошибка при создании заказа или инициации платежа: ${String(error)}`);
     }
   }
 
@@ -152,10 +165,7 @@ export class OrderService {
           include: [
             {
               model: Product,
-              include: [
-                { model: FileModel, as: 'images' },
-                { model: Category },
-              ],
+              include: [{ model: FileModel, as: 'images' }, { model: Category }],
             },
           ],
         },
@@ -176,18 +186,13 @@ export class OrderService {
     sort = 'createdAt',
     order = 'ASC',
     userId,
-  }: PaginationQuery & { userId?: number }): Promise<
-    PaginationResponse<Order>
-  > {
+  }: PaginationQuery & { userId?: number }): Promise<PaginationResponse<Order>> {
     const offset = (page - 1) * limit;
 
     // Условие для поиска
     const whereCondition: any = search
       ? {
-          [Op.or]: [
-            { title: { [Op.iLike]: `%${search}%` } },
-            { description: { [Op.iLike]: `%${search}%` } },
-          ],
+          [Op.or]: [{ title: { [Op.iLike]: `%${search}%` } }, { description: { [Op.iLike]: `%${search}%` } }],
         }
       : {};
 
@@ -197,27 +202,23 @@ export class OrderService {
     }
 
     // Запрос с полным включением связанных данных
-    const { rows: orders, count: totalItems } =
-      await this.orderModel.findAndCountAll({
-        where: whereCondition,
-        limit,
-        offset,
-        order: [[sort, order]],
-        include: [
-          {
-            model: OrderItem,
-            include: [
-              {
-                model: Product,
-                include: [
-                  { model: FileModel, as: 'images' },
-                  { model: Category },
-                ],
-              },
-            ],
-          },
-        ],
-      });
+    const { rows: orders, count: totalItems } = await this.orderModel.findAndCountAll({
+      where: whereCondition,
+      limit,
+      offset,
+      order: [[sort, order]],
+      include: [
+        {
+          model: OrderItem,
+          include: [
+            {
+              model: Product,
+              include: [{ model: FileModel, as: 'images' }, { model: Category }],
+            },
+          ],
+        },
+      ],
+    });
 
     return {
       items: orders,
@@ -237,10 +238,7 @@ export class OrderService {
           include: [
             {
               model: Product,
-              include: [
-                { model: FileModel, as: 'images' },
-                { model: Category },
-              ],
+              include: [{ model: FileModel, as: 'images' }, { model: Category }],
             },
           ],
         },
@@ -254,20 +252,19 @@ export class OrderService {
     return order;
   }
 
-  async updateOrderPaymentStatus(
-    transactionId: string,
-    status: string,
-  ): Promise<void> {
+  async updateOrderPaymentStatus(transactionId: string, status: string): Promise<void> {
     const order = await this.orderModel.findOne({ where: { transactionId } });
 
     if (!order) {
-      throw new NotFoundException(
-        `Заказ с transactionId ${transactionId} не найден.`,
-      );
+      throw new NotFoundException(`Заказ с transactionId ${transactionId} не найден.`);
     }
 
     order.orderStatus = `payment_${status}`;
     order.paymentStatus = status;
     await order.save();
+    await this.notificationService.sendNotificationToAdmin<Order>({
+      type: WS_MESSAGE_TYPE.ORDER_STATUS,
+      payload: order,
+    });
   }
 }
