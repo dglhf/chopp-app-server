@@ -269,7 +269,6 @@
 //   }
 // }
 
-
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Order } from './order.model';
@@ -347,7 +346,7 @@ export class OrderService {
 
       const cart = await this.getCart(userId, transaction);
 
-      console.log('---cart: ', cart)
+      console.log('---cart: ', cart);
 
       const order = await this.orderModel.create(
         {
@@ -360,8 +359,6 @@ export class OrderService {
         { transaction },
       );
 
-      
-
       await this.createOrderItems(order.id, cart.items, transaction);
 
       const user = await this.userModel.findByPk(userId, { transaction });
@@ -372,7 +369,7 @@ export class OrderService {
         transaction,
       });
 
-      console.log('---items: ', items)
+      console.log('---items: ', items);
 
       const paymentResult = await this.paymentService.createPayment({
         amount: order.totalPrice.toString(),
@@ -397,9 +394,16 @@ export class OrderService {
         payload: order,
       });
 
+      await this.notificationService.sendUserNotifications<Order>({
+        recipientUserIds: [user.id],
+        message: {
+          type: WS_MESSAGE_TYPE.NEW_ORDER,
+          payload: order,
+        },
+      });
+
       return order.toJSON() as CreatePaymentResponseDto;
     } catch (error) {
-      console.log('error; ', error)
       await transaction.rollback();
       throw new NotFoundException(`Ошибка при создании заказа или инициации платежа: ${String(error)}`);
     }
@@ -427,10 +431,7 @@ export class OrderService {
 
     const whereCondition: any = search
       ? {
-          [Op.or]: [
-            { title: { [Op.iLike]: `%${search}%` } },
-            { description: { [Op.iLike]: `%${search}%` } },
-          ],
+          [Op.or]: [{ title: { [Op.iLike]: `%${search}%` } }, { description: { [Op.iLike]: `%${search}%` } }],
         }
       : {};
 
@@ -498,10 +499,18 @@ export class OrderService {
     order.orderStatus = `payment_${status}`;
     order.paymentStatus = status;
     await order.save();
-  
+
     await this.notificationService.sendNotificationToAdmin<Order>({
       type: WS_MESSAGE_TYPE.ORDER_STATUS,
       payload: order,
+    });
+
+    await this.notificationService.sendUserNotifications<Order>({
+      recipientUserIds: [order.userId],
+      message: {
+        type: WS_MESSAGE_TYPE.ORDER_STATUS,
+        payload: order,
+      },
     });
   }
 }

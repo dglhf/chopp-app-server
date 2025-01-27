@@ -524,6 +524,13 @@ export class PaymentsService {
       payload: body,
     });
 
+    await this.notificationService.sendUserNotifications({
+      recipientUserIds: [user.id], 
+      message: {
+      type: WS_MESSAGE_TYPE.NEW_PAYMENT,
+      payload: body,
+    }});
+
     return this.makeHttpRequest(`${YOOKASSA_URL}/payments`, 'POST', body, headers);
   }
 
