@@ -67,8 +67,6 @@ export class ProductsController {
     @Param() params,
   ) {
     const { id } = params;
-    console.log('params: ', params);
-    console.log('productData: ', productData);
     const imageModels = await Promise.all(
       files.images?.map((file) => this.filesService.uploadFile(file)) || [],
     );
@@ -76,34 +74,49 @@ export class ProductsController {
     try {
       let onlyNewUploadedImagesIds = [];
       let initialImagesIds = [];
+      let initialImagesParsed = []
+      let initialImagesHashSet = new Set();
 
       if (Array.isArray(productData.initialImages)) {
-        const initialImagesParsed = productData.initialImages.map((item) =>
+        initialImagesParsed = productData.initialImages.map((item) =>
           JSON.parse(item),
         );
         console.log('initialImagesArr: ', initialImagesParsed);
 
-        const initialImagesHashSet = new Set(
-          initialImagesParsed.map((item) => item.hash),
-        );
 
-        onlyNewUploadedImagesIds = imageModels
-          .filter((item) => !initialImagesHashSet.has(item.hash))
-          .map((item) => item.id);
-        initialImagesIds = initialImagesParsed.map((item) => item.id);
       } else {
-        const initialImage = JSON.parse(productData.initialImages);
 
-        onlyNewUploadedImagesIds = imageModels
-          .filter((item) => initialImage.hase !== item.hash)
-          .map((item) => item.id);
-        initialImagesIds = [initialImage.id];
+        initialImagesParsed = [JSON.parse(productData.initialImages)];
+        // initialImagesHashSet = new Set(
+        //   initialImagesParsed.map((item) => item.hash),
+        // );
+
+
+
+
+
+        // const initialImage = JSON.parse(productData.initialImages);
+
+        // onlyNewUploadedImagesIds = imageModels
+        //   .filter((item) => initialImage.hash !== item.hash)
+        //   .map((item) => item.id);
+        // initialImagesIds = [initialImage.id];
       }
 
       console.log('[...initialImagesIds, ...onlyNewUploadedImagesIds]; ', [
         ...initialImagesIds,
         ...onlyNewUploadedImagesIds,
       ]);
+
+      initialImagesHashSet = new Set(
+        initialImagesParsed.map((item) => item.hash),
+      );
+
+      onlyNewUploadedImagesIds = imageModels
+        .filter((item) => !initialImagesHashSet.has(item.hash))
+        .map((item) => item.id);
+
+      initialImagesIds = initialImagesParsed.map((item) => item.uid);
 
       return this.productService.updateProduct({
         ...productData,
