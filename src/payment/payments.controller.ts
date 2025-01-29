@@ -1,21 +1,5 @@
-import {
-  Controller,
-  UseGuards,
-  Get,
-  Query,
-  Param,
-  Post,
-  Body,
-  Req,
-} from '@nestjs/common';
-import {
-  ApiTags,
-  ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
-  ApiQuery,
-  ApiBody,
-} from '@nestjs/swagger';
+import { Controller, UseGuards, Get, Query, Param, Post, Body, Req } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiQuery, ApiBody, ApiParam } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { CreateRefundDto } from 'src/order/dto/create-refund.dto';
 import { GetPaymentResponseDto } from 'src/order/dto/get-payment-response.dto';
@@ -37,12 +21,27 @@ export class PaymentsController {
 
   @Post('/orders/:orderId/pay')
   @ApiOperation({ summary: 'Оплатить заказ' })
-  @ApiResponse({
-    status: 200,
-    description: 'Платеж для заказа успешно инициирован.',
+  @ApiParam({
+    name: 'orderId',
+    required: true,
+    type: Number,
+    description: 'Идентификатор заказа',
   })
-  async payForOrder(@Param('orderId') orderId: number): Promise<any> {
-    return this.paymentService.payForOrder(orderId);
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        returnUrl: {
+          type: 'string',
+          description: 'URL, на который будет перенаправлен пользователь после оплаты',
+          example: 'https://yourfrontend.com/order-confirmation/123',
+        },
+      },
+      required: ['returnUrl'],
+    },
+  })
+  async payForOrder(@Param('orderId') orderId: number, @Body() { returnUrl }: { returnUrl: string }): Promise<any> {
+    return this.paymentService.payForOrder({ orderId, returnUrl });
   }
 
   @Get('')
@@ -128,9 +127,7 @@ export class PaymentsController {
   })
   @Roles('ADMIN')
   @UseGuards(RolesGuard)
-  async getPayment(
-    @Param('paymentId') paymentId: string,
-  ): Promise<GetPaymentResponseDto> {
+  async getPayment(@Param('paymentId') paymentId: string): Promise<GetPaymentResponseDto> {
     const paymentDetails = await this.paymentService.getPaymentById(paymentId);
     return { payment: paymentDetails }; // Оберните результат в объект для соответствия DTO
   }
@@ -140,10 +137,7 @@ export class PaymentsController {
   @ApiResponse({ status: 200, description: 'Платеж успешно подтвержден' })
   @Roles('ADMIN')
   @UseGuards(RolesGuard)
-  async capturePayment(
-    @Param('paymentId') paymentId: string,
-    @Body() captureDto: CapturePaymentDto,
-  ) {
+  async capturePayment(@Param('paymentId') paymentId: string, @Body() captureDto: CapturePaymentDto) {
     return await this.paymentService.capturePayment(paymentId, captureDto);
   }
 
@@ -171,9 +165,7 @@ export class PaymentsController {
   })
   @Roles('ADMIN')
   @UseGuards(RolesGuard)
-  createRefund(
-    @Body() createRefundDto: CreateRefundDto,
-  ): Promise<GetRefundResponseDto> {
+  createRefund(@Body() createRefundDto: CreateRefundDto): Promise<GetRefundResponseDto> {
     return this.paymentService.createRefund(createRefundDto);
   }
 
@@ -255,75 +247,72 @@ export class PaymentsController {
   })
   @Roles('ADMIN')
   @UseGuards(RolesGuard)
-  getRefundById(
-    @Param('refundId') refundId: string,
-  ): Promise<GetRefundResponseDto> {
+  getRefundById(@Param('refundId') refundId: string): Promise<GetRefundResponseDto> {
     return this.paymentService.getRefundById(refundId);
   }
 
   @Get('/receipts')
-@ApiOperation({ summary: 'Получить список чеков' })
-@ApiResponse({
-  status: 200,
-  description: 'Список чеков успешно получен',
-})
-@ApiQuery({
-  name: 'limit',
-  required: false,
-  type: Number,
-  description: 'Ограничение количества возвращаемых чеков',
-})
-@ApiQuery({
-  name: 'cursor',
-  required: false,
-  type: String,
-  description: 'Курсор для пагинации',
-})
-@ApiQuery({
-  name: 'created_at_gte',
-  required: false,
-  type: String,
-  description: 'Фильтр по времени создания: больше или равно',
-})
-@ApiQuery({
-  name: 'created_at_gt',
-  required: false,
-  type: String,
-  description: 'Фильтр по времени создания: строго больше',
-})
-@ApiQuery({
-  name: 'created_at_lte',
-  required: false,
-  type: String,
-  description: 'Фильтр по времени создания: меньше или равно',
-})
-@ApiQuery({
-  name: 'created_at_lt',
-  required: false,
-  type: String,
-  description: 'Фильтр по времени создания: строго меньше',
-})
-@ApiQuery({
-  name: 'status',
-  required: false,
-  type: String,
-  description: 'Фильтр по статусу чека',
-})
-@Roles('ADMIN')
-@UseGuards(RolesGuard)
-async getReceipts(
-  @Query()
-  queryParams: {
-    limit?: number;
-    cursor?: string;
-    created_at_gte?: string;
-    created_at_gt?: string;
-    created_at_lte?: string;
-    created_at_lt?: string;
-    status?: string;
-  },
-): Promise<any> {
-  return this.paymentService.getReceipts(queryParams);
-}
-
+  @ApiOperation({ summary: 'Получить список чеков' })
+  @ApiResponse({
+    status: 200,
+    description: 'Список чеков успешно получен',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Ограничение количества возвращаемых чеков',
+  })
+  @ApiQuery({
+    name: 'cursor',
+    required: false,
+    type: String,
+    description: 'Курсор для пагинации',
+  })
+  @ApiQuery({
+    name: 'created_at_gte',
+    required: false,
+    type: String,
+    description: 'Фильтр по времени создания: больше или равно',
+  })
+  @ApiQuery({
+    name: 'created_at_gt',
+    required: false,
+    type: String,
+    description: 'Фильтр по времени создания: строго больше',
+  })
+  @ApiQuery({
+    name: 'created_at_lte',
+    required: false,
+    type: String,
+    description: 'Фильтр по времени создания: меньше или равно',
+  })
+  @ApiQuery({
+    name: 'created_at_lt',
+    required: false,
+    type: String,
+    description: 'Фильтр по времени создания: строго меньше',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    type: String,
+    description: 'Фильтр по статусу чека',
+  })
+  @Roles('ADMIN')
+  @UseGuards(RolesGuard)
+  async getReceipts(
+    @Query()
+    queryParams: {
+      limit?: number;
+      cursor?: string;
+      created_at_gte?: string;
+      created_at_gt?: string;
+      created_at_lte?: string;
+      created_at_lt?: string;
+      status?: string;
+    },
+  ): Promise<any> {
+    return this.paymentService.getReceipts(queryParams);
+  }
 }

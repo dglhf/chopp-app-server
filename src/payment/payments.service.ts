@@ -449,7 +449,6 @@ export class PaymentsService {
     };
 
     const receiptItems = items.map((item) => {
-
       return {
         description: item.product.title,
         quantity: item.quantity,
@@ -459,7 +458,7 @@ export class PaymentsService {
         },
         //TODO: узнать че за vat_code
         vat_code: 1,
-      }
+      };
     });
 
     return { customer, items: receiptItems };
@@ -473,20 +472,21 @@ export class PaymentsService {
     params?: Record<string, any>, // Новый аргумент для параметров запроса
   ): Promise<T> {
     try {
-      const response = await this.httpService.request<T>({
-        url,
-        method,
-        data,
-        headers,
-        params, // Передаем параметры в запрос
-      }).toPromise();
-  
+      const response = await this.httpService
+        .request<T>({
+          url,
+          method,
+          data,
+          headers,
+          params, // Передаем параметры в запрос
+        })
+        .toPromise();
+
       return response.data;
     } catch (error) {
       throw new NotFoundException(error.response?.data || 'Unexpected error occurred');
     }
   }
-  
 
   async createPayment({
     amount,
@@ -525,16 +525,17 @@ export class PaymentsService {
     });
 
     await this.notificationService.sendUserNotifications({
-      recipientUserIds: [user.id], 
+      recipientUserIds: [user.id],
       message: {
-      type: WS_MESSAGE_TYPE.NEW_PAYMENT,
-      payload: body,
-    }});
+        type: WS_MESSAGE_TYPE.NEW_PAYMENT,
+        payload: body,
+      },
+    });
 
     return this.makeHttpRequest(`${YOOKASSA_URL}/payments`, 'POST', body, headers);
   }
 
-  async payForOrder(orderId: number): Promise<any> {
+  async payForOrder({ orderId, returnUrl }: { orderId: number; returnUrl: string }): Promise<any> {
     const order = await this.orderModel.findOne({
       where: { id: orderId },
       include: [
@@ -555,7 +556,7 @@ export class PaymentsService {
       amount: order.totalPrice.toString(),
       currency: 'RUB',
       description: `Оплата за заказ ${order.id}`,
-      returnUrl: `${process.env.FRONTEND_URL}/order-confirmation/${order.id}`,
+      returnUrl,
       metadata: { order_id: order.id },
       user: order.user,
       items: order.items,
@@ -585,7 +586,7 @@ export class PaymentsService {
 
   async getPayments(params: Record<string, any>): Promise<any> {
     const headers = this.createHeaders();
-    return this.makeHttpRequest(`${YOOKASSA_URL}/payments`, 'GET', null, headers, params );
+    return this.makeHttpRequest(`${YOOKASSA_URL}/payments`, 'GET', null, headers, params);
   }
 
   async getPaymentById(paymentId: string): Promise<any> {
@@ -610,7 +611,7 @@ export class PaymentsService {
 
   async getRefunds(params: Record<string, any>): Promise<any> {
     const headers = this.createHeaders();
-    return this.makeHttpRequest(`${YOOKASSA_URL}/refunds`, 'GET', null, headers, params );
+    return this.makeHttpRequest(`${YOOKASSA_URL}/refunds`, 'GET', null, headers, params);
   }
 
   async getRefundById(refundId: string): Promise<GetRefundResponseDto> {

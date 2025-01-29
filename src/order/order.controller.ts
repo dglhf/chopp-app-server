@@ -1,21 +1,5 @@
-import {
-  Body,
-  Controller,
-  Post,
-  UseGuards,
-  Req,
-  Get,
-  Query,
-  Param,
-  ParseIntPipe,
-} from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiQuery,
-} from '@nestjs/swagger';
+import { Body, Controller, Post, UseGuards, Req, Get, Query, Param, ParseIntPipe } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { OrderService } from './order.service';
 import { PaymentsService } from 'src/payment/payments.service';
@@ -43,8 +27,21 @@ export class OrderController {
     type: CreatePaymentResponseDto,
   })
   @ApiResponse({ status: 403, description: 'Доступ запрещен' })
-  async createOrder(@Req() req: any): Promise<CreatePaymentResponseDto> {
-    return this.orderService.createOrder(req.user.id);
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        returnUrl: {
+          type: 'string',
+          description: 'URL, на который будет перенаправлен пользователь после оплаты',
+          example: 'https://yourfrontend.com/order-confirmation/123',
+        },
+      },
+      required: ['returnUrl'],
+    },
+  })
+  async createOrder(@Req() req: any, @Body() { returnUrl }: { returnUrl: string }): Promise<CreatePaymentResponseDto> {
+    return this.orderService.createOrder({ userId: req.user.id, returnUrl });
   }
 
   @Get('/lastOrder')

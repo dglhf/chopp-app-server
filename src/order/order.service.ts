@@ -335,19 +335,18 @@ export class OrderService {
     }
   }
 
-  async createOrder(userId: number): Promise<CreatePaymentResponseDto> {
+  async createOrder({ userId, returnUrl }: { userId: number; returnUrl: string }): Promise<CreatePaymentResponseDto> {
     const transaction = await this.orderModel.sequelize.transaction();
-
+  
     try {
       const lastOrder = await this.getLastOrder(userId);
       if (lastOrder && lastOrder.orderStatus !== ORDER_STATUS.FINISHED) {
         throw new Error('Дождитесь завершения предыдущего заказа.');
       }
-
+  
       const cart = await this.getCart(userId, transaction);
-
       console.log('---cart: ', cart);
-
+  
       const order = await this.orderModel.create(
         {
           userId,
@@ -358,42 +357,42 @@ export class OrderService {
         },
         { transaction },
       );
-
+  
       await this.createOrderItems(order.id, cart.items, transaction);
-
       const user = await this.userModel.findByPk(userId, { transaction });
-
+  
       const items = await this.orderItemModel.findAll({
         where: { orderId: order.id },
         include: [{ model: Product }],
         transaction,
       });
-
+  
       console.log('---items: ', items);
-
+  
       const paymentResult = await this.paymentService.createPayment({
         amount: order.totalPrice.toString(),
         currency: 'RUB',
         description: `Оплата за заказ ${order.id}`,
-        returnUrl: `https://www.example/order-confirmation/${order.id}`,
+        returnUrl, // Используем переданный returnUrl
         metadata: { order_id: order.id },
         user,
         items,
       });
-
+  
       order.transactionId = paymentResult.id;
       order.paymentStatus = PAYMENT_STATUS.PENDING;
       order.paymentUrl = paymentResult.confirmation.confirmation_url;
       await order.save({ transaction });
+  
       await this.shoppingCartItemModel.destroy({ where: { shoppingCartId: cart.id }, transaction });
       await cart.update({ totalPrice: 0, quantity: 0 }, { transaction });
       await transaction.commit();
-
+  
       await this.notificationService.sendNotificationToAdmin<Order>({
         type: WS_MESSAGE_TYPE.NEW_ORDER,
         payload: order,
       });
-
+  
       await this.notificationService.sendUserNotifications<Order>({
         recipientUserIds: [user.id],
         message: {
@@ -401,13 +400,14 @@ export class OrderService {
           payload: order,
         },
       });
-
+  
       return order.toJSON() as CreatePaymentResponseDto;
     } catch (error) {
       await transaction.rollback();
       throw new NotFoundException(`Ошибка при создании заказа или инициации платежа: ${String(error)}`);
     }
   }
+  
 
   async findLastOrder(userId: number): Promise<Order> {
     const order = await this.getLastOrder(userId);
