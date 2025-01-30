@@ -8,6 +8,10 @@ import { PaginationResponse } from 'src/shared/types/pagination-response';
 import { Order } from './order.model';
 import { CreatePaymentResponseDto } from 'src/payment/dto/create-payment-response.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { ORDER_STATUS, PAYMENT_STATUS } from 'src/shared/enums';
+import { UpdatePaymentStatusDto } from './dto/update-payment-status.dto';
+import { Roles } from 'src/auth/roles-auth.decorator';
+import { RolesGuard } from 'src/auth/roles-auth.guard';
 
 @ApiTags('orders')
 @ApiBearerAuth()
@@ -42,6 +46,17 @@ export class OrderController {
   })
   async createOrder(@Req() req: any, @Body() { returnUrl }: { returnUrl: string }): Promise<CreatePaymentResponseDto> {
     return this.orderService.createOrder({ userId: req.user.id, returnUrl });
+  }
+
+  @Post('/update-payment-status')
+  @ApiOperation({ summary: 'Обновить статус платежа и заказа' })
+  @ApiResponse({ status: 200, description: 'Статус платежа и заказа успешно обновлен.' })
+  @ApiResponse({ status: 404, description: 'Заказ не найден.' })
+  @ApiBody({ type: UpdatePaymentStatusDto }) // Указываем DTO с enum'ами
+  @Roles('ADMIN')
+  @UseGuards(RolesGuard)
+  async updatePaymentStatus(@Body() updateDto: UpdatePaymentStatusDto): Promise<Order> {
+    return this.orderService.updateOrderPaymentStatus(updateDto);
   }
 
   @Get('/lastOrder')

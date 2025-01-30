@@ -1,6 +1,7 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { YooKassaWebhookService } from './yookassa-webhook.service';
 import { OrderService } from 'src/order/order.service';
+import { ORDER_STATUS, PAYMENT_STATUS } from 'src/shared/enums';
 
 @Controller('yookassa/webhook')
 export class YooKassaWebhookController {
@@ -15,14 +16,22 @@ export class YooKassaWebhookController {
 
     switch (event) {
       case 'payment.succeeded':
-          await this.orderService.updateOrderPaymentStatus(object.id, 'succeeded'); // Используем метод из OrderService
-          await this.subscriptionService.updateSubscriptionStatus(object.id, 'succeeded');
+        await this.orderService.updateOrderPaymentStatus({
+          transactionId: object.id,
+          orderStatus: ORDER_STATUS.PAYMENT_SUCCEEDED,
+          paymentStatus: PAYMENT_STATUS.SUCCEEDED,
+        });
+        await this.subscriptionService.updateSubscriptionStatus(object.id, 'succeeded');
         await this.subscriptionService.removeSubscription(object.id);
         break;
 
       case 'payment.canceled':
-          await this.orderService.updateOrderPaymentStatus(object.id, 'canceled'); // Используем метод из OrderService
-          await this.subscriptionService.updateSubscriptionStatus(object.id, 'canceled');
+        await this.orderService.updateOrderPaymentStatus({
+          transactionId: object.id,
+          orderStatus: ORDER_STATUS.PAYMENT_CANCELED,
+          paymentStatus: PAYMENT_STATUS.CANCELED,
+        });
+        await this.subscriptionService.updateSubscriptionStatus(object.id, 'canceled');
         await this.subscriptionService.removeSubscription(object.id);
         break;
 

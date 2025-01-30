@@ -412,7 +412,7 @@ import { Order } from 'src/order/order.model';
 import { OrderItem } from 'src/order/order-item.model';
 import { YooKassaWebhookService } from './yookassa-webhook.service';
 import { NotificationService } from 'src/websockets/notification/notification.service';
-import { WS_MESSAGE_TYPE } from 'src/shared/enums/';
+import { PAYMENT_STATUS, WS_MESSAGE_TYPE } from 'src/shared/enums/';
 import { User } from 'src/users/users.model';
 
 @Injectable()
@@ -563,7 +563,7 @@ export class PaymentsService {
     });
 
     order.transactionId = paymentResult.id;
-    order.paymentStatus = 'pending';
+    order.paymentStatus = PAYMENT_STATUS.PENDING;
     order.paymentUrl = paymentResult.confirmation.confirmation_url;
     await order.save();
 

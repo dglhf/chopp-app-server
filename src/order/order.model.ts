@@ -10,6 +10,7 @@ import {
 import { ShoppingCartItem } from 'src/shopping-cart/shopping-cart-item.model';
 import { User } from 'src/users/users.model';
 import { OrderItem } from './order-item.model';
+import { ORDER_STATUS, PAYMENT_STATUS } from 'src/shared/enums';
 
 @Table({ tableName: 'orders' })
 export class Order extends Model<Order> {
@@ -41,10 +42,10 @@ export class Order extends Model<Order> {
   quantity: number;
 
   @Column({ type: DataType.TEXT })
-  orderStatus: string;
+  orderStatus: ORDER_STATUS;
 
   @Column({ type: DataType.TEXT })
-  paymentStatus: string;
+  paymentStatus: PAYMENT_STATUS;
 
   @Column({ type: DataType.TEXT })
   transactionId: string;
