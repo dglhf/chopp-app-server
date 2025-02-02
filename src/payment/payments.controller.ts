@@ -63,34 +63,58 @@ export class PaymentsController {
     description: 'Курсор для пагинации',
   })
   @ApiQuery({
-    name: 'created_at_gte',
+    name: 'created_at.gte',
     required: false,
     type: String,
     description: 'Фильтр по времени создания: больше или равно',
   })
   @ApiQuery({
-    name: 'created_at_gt',
+    name: 'created_at.gt',
     required: false,
     type: String,
     description: 'Фильтр по времени создания: строго больше',
   })
   @ApiQuery({
-    name: 'created_at_lte',
+    name: 'created_at.lte',
     required: false,
     type: String,
     description: 'Фильтр по времени создания: меньше или равно',
   })
   @ApiQuery({
-    name: 'created_at_lt',
+    name: 'created_at.lt',
     required: false,
     type: String,
     description: 'Фильтр по времени создания: строго меньше',
   })
   @ApiQuery({
-    name: 'payment_id',
+    name: 'captured_at.gte',
     required: false,
     type: String,
-    description: 'Фильтр по идентификатору платежа',
+    description: 'Фильтр по времени подтверждения платежей: больше или равно',
+  })
+  @ApiQuery({
+    name: 'captured_at.gt',
+    required: false,
+    type: String,
+    description: 'Фильтр по времени подтверждения платежей: строго больше',
+  })
+  @ApiQuery({
+    name: 'captured_at.lte',
+    required: false,
+    type: String,
+    description: 'Фильтр по времени подтверждения платежей: меньше или равно',
+  })
+  @ApiQuery({
+    name: 'captured_at.lt',
+    required: false,
+    type: String,
+    description: 'Фильтр по времени подтверждения платежей: строго меньше',
+  })
+  @ApiQuery({
+    name: 'payment_method',
+    required: false,
+    type: String,
+    description: 'Фильтр по коду способа оплаты',
   })
   @ApiQuery({
     name: 'status',
@@ -105,16 +129,21 @@ export class PaymentsController {
     queryParams: {
       limit?: number;
       cursor?: string;
-      created_at_gte?: string;
-      created_at_gt?: string;
-      created_at_lte?: string;
-      created_at_lt?: string;
-      payment_id?: string;
+      'created_at.gte'?: string;
+      'created_at.gt'?: string;
+      'created_at.lte'?: string;
+      'created_at.lt'?: string;
+      'captured_at.gte'?: string;
+      'captured_at.gt'?: string;
+      'captured_at.lte'?: string;
+      'captured_at.lt'?: string;
+      payment_method?: string;
       status?: string;
     },
   ): Promise<any> {
     return this.paymentService.getPayments(queryParams);
   }
+
 
   @Get('/:paymentId')
   @ApiOperation({

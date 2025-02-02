@@ -301,7 +301,7 @@ export class OrderService {
     private readonly notificationService: NotificationService,
   ) {}
 
-  private async getLastOrder(userId: number): Promise<Order | null> {
+  private async findLastOrderRaw(userId: number): Promise<Order | null> {
     return this.orderModel.findOne({
       where: { userId },
       order: [['createdAt', 'DESC']],
@@ -340,7 +340,7 @@ export class OrderService {
     const transaction = await this.orderModel.sequelize.transaction();
 
     try {
-      const lastOrder = await this.getLastOrder(userId);
+      const lastOrder = await this.findLastOrderRaw(userId);
       if (lastOrder && lastOrder.orderStatus !== ORDER_STATUS.DELIVERED) {
         throw new Error('Дождитесь завершения предыдущего заказа.');
       }
@@ -407,14 +407,54 @@ export class OrderService {
   }
 
   async findLastOrder(userId: number): Promise<Order> {
-    const order = await this.getLastOrder(userId);
+    const order = await this.orderModel.findOne({
+      where: { userId },
+      order: [['createdAt', 'DESC']], // Находим последний заказ
+      include: [
+        {
+          model: OrderItem,
+          include: [
+            {
+              model: Product,
+              include: [{ model: FileModel, as: 'images' }, { model: Category }], // Включаем изображения и категорию
+            },
+          ],
+        },
+      ],
+    });
 
     if (!order) {
       throw new NotFoundException('Заказ не найден.');
     }
 
-    return order;
-  }
+    // Преобразуем в JSON, чтобы исключить циклические ссылки
+    const plainOrder = order.toJSON();
+
+    // Агрегируем информацию о товарах
+    const items = plainOrder.items.map((item) => ({
+      product: {
+        id: item.product.id,
+        title: item.product.title,
+        price: item.product.price,
+        category: item.product.category?.title || 'Без категории',
+        images: item.product.images, // Включаем изображения
+      },
+      quantity: item.quantity,
+      totalPrice: item.quantity * item.product.price,
+    }));
+
+    return {
+      id: plainOrder.id,
+      totalPrice: plainOrder.totalPrice,
+      quantity: plainOrder.quantity,
+      orderStatus: plainOrder.orderStatus,
+      paymentStatus: plainOrder.paymentStatus,
+      transactionId: plainOrder.transactionId,
+      createdAt: plainOrder.createdAt,
+      items, // Включаем агрегированные товары
+    } as unknown as Order;
+}
+
 
   async findAllOrders({
     page = 1,
