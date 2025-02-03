@@ -451,6 +451,7 @@ export class OrderService {
       paymentStatus: plainOrder.paymentStatus,
       transactionId: plainOrder.transactionId,
       createdAt: plainOrder.createdAt,
+      paymentUrl: plainOrder.paymentUrl,
       items, // Включаем агрегированные товары
     } as unknown as Order;
 }
