@@ -11,7 +11,7 @@ import { ShoppingCart } from 'src/shopping-cart/shopping-cart.model';
 import { OrderItem } from './order-item.model';
 import { Product } from 'src/products/product.model';
 import { PaginationResponse } from 'src/shared/types/pagination-response';
-import { PaginationQuery } from 'src/shared/types';
+import { PaginationRequestQuery } from 'src/shared/types';
 import { Category } from 'src/categories/category.model';
 import { FileModel } from 'src/files/file.model';
 import { NotificationService } from 'src/websockets/notification/notification.service';
@@ -197,7 +197,7 @@ export class OrderService {
     sort = 'createdAt',
     order = 'ASC',
     userId,
-  }: PaginationQuery & { userId?: number }): Promise<PaginationResponse<Order>> {
+  }: PaginationRequestQuery & { userId?: number }): Promise<PaginationResponse<Order>> {
     const offset = (page - 1) * limit;
 
     const whereCondition: any = search
