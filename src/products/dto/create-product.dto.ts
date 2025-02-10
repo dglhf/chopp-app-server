@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNumber, IsString, Min, IsArray } from 'class-validator';
+import { IsNumber, IsString, Min, IsArray, IsBoolean } from 'class-validator';
 
 export class CreateProductDto {
   @ApiProperty({
@@ -23,6 +23,13 @@ export class CreateProductDto {
   @IsNumber()
   @Min(0)
   price: number;
+
+  @ApiProperty({
+    description: 'Product visibility',
+    example: true,
+  })
+  @IsBoolean()
+  isVisible: boolean;
 
   @ApiProperty({
     description: 'Product category',

@@ -167,7 +167,7 @@ export class OrderService {
         id: item.product.id,
         title: item.product.title,
         price: item.product.price,
-        category: item.product.category?.title || 'Без категории',
+        category: item.product.category?.title || 'Другое',
         images: item.product.images, // Включаем изображения
       },
       quantity: item.quantity,

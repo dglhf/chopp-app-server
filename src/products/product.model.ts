@@ -41,6 +41,12 @@ export class Product extends Model<Product> {
   })
   price: number;
 
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: false,
+  })
+  isVisible: boolean;
+
   @BelongsTo(() => Category)
   category: Category;
 

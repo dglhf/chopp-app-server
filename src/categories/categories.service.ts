@@ -6,7 +6,7 @@ import { Sequelize, Op } from 'sequelize';
 import { UpdateCategoriesDto } from './dto/update-categories.dto';
 import { Product } from 'src/products/product.model';
 
-const NO_CATEGORY = 'Без категории'
+const NO_CATEGORY = 'Другое'
 
 @Injectable()
 export class CategoriesService implements OnModuleInit {
@@ -64,7 +64,7 @@ export class CategoriesService implements OnModuleInit {
       throw new NotFoundException(`Category with ID ${id} not found`);
     }
 
-    // Запрещаем редактировать категорию "Без категории"
+    // Запрещаем редактировать категорию "Другое"
     if (category.title === NO_CATEGORY) {
       throw new HttpException(`Cannot edit the title of the default category "${NO_CATEGORY}"`, HttpStatus.FORBIDDEN);
     }
@@ -89,24 +89,24 @@ export class CategoriesService implements OnModuleInit {
       throw new NotFoundException(`Категория с ID ${id} не найдена`);
     }
 
-    // Проверяем, если это категория с названием "Без категории"
+    // Проверяем, если это категория с названием "Другое"
     if (categoryToDelete.title === NO_CATEGORY) {
       throw new HttpException(`Нельзя удалить категорию "${NO_CATEGORY}"`, HttpStatus.FORBIDDEN);
     }
 
     return await this.categoryModel.sequelize.transaction(async (t) => {
-      // Находим категорию "Без категории"
+      // Находим категорию "Другое"
       const noCategory = await this.categoryModel.findOne({
         where: { title: NO_CATEGORY },
         transaction: t,
       });
 
-      // Если категории "Без категории" нет — выбрасываем ошибку
+      // Если категории "Другое" нет — выбрасываем ошибку
       if (!noCategory) {
         throw new NotFoundException(`Категория "${NO_CATEGORY}" не найдена. Перенос невозможен.`);
       }
 
-      // Перенос всех продуктов из удаляемой категории в "Без категории"
+      // Перенос всех продуктов из удаляемой категории в "Другое"
       await this.productModel.update(
         { categoryId: noCategory.id },
         { where: { categoryId: categoryToDelete.id }, transaction: t },

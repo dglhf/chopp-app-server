@@ -11,6 +11,7 @@ import {
   HttpException,
   HttpStatus,
   UseGuards,
+  Patch,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { FilesService } from '../files/files.service';
@@ -64,26 +65,26 @@ export class ProductsController {
     try {
       const imageModels = await Promise.all(files.images?.map((file) => this.filesService.uploadFile(file)) || []);
 
-      let initialImagesParsed: { id: number; hash: string }[] = [];
-      let initialImagesHashSet = new Set<string>();
+      let remainingOldImagesParsed: { id: number; hash: string }[] = [];
+      let remainingOldImagesHashSet = new Set<string>();
 
-      if (productData.initialImages) {
-        initialImagesParsed = Array.isArray(productData.initialImages)
-          ? productData.initialImages.map((item) => JSON.parse(item))
-          : [JSON.parse(productData.initialImages)];
+      if (productData.remainingOldImages) {
+        remainingOldImagesParsed = Array.isArray(productData.remainingOldImages)
+          ? productData.remainingOldImages.map((item) => JSON.parse(item))
+          : [JSON.parse(productData.remainingOldImages)];
 
-        initialImagesHashSet = new Set(initialImagesParsed.map((item) => item.hash));
+        remainingOldImagesHashSet = new Set(remainingOldImagesParsed.map((item) => item.hash));
       }
 
       const onlyNewUploadedImagesIds = imageModels
-        .filter((item) => !initialImagesHashSet.has(item.hash))
+        .filter((item) => !remainingOldImagesHashSet.has(item.hash))
         .map((item) => item.id);
 
-      const initialImagesIds = initialImagesParsed.map((item) => item.id);
+      const remainingOldImagesIds = remainingOldImagesParsed.map((item) => item.id);
 
       return this.productService.updateProduct({
         ...productData,
-        imageIds: [...initialImagesIds, ...onlyNewUploadedImagesIds],
+        imageIds: [...remainingOldImagesIds, ...onlyNewUploadedImagesIds],
         id,
       });
     } catch (error) {
@@ -107,5 +108,14 @@ export class ProductsController {
     @Query('order') order: 'ASC' | 'DESC' = 'ASC',
   ) {
     return this.productService.findAllProducts(Number(page), Number(limit), categoryId, search, sort, order);
+  }
+
+  @Patch(':id/visibility')
+  @ApiBody({
+    description: 'Update product visibility',
+    schema: { type: 'object', properties: { isVisible: { type: 'boolean' } } },
+  })
+  async updateVisibility(@Param('id') id: number, @Body('isVisible') isVisible: boolean) {
+    return this.productService.updateVisibility(id, isVisible);
   }
 }
