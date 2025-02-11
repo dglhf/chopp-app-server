@@ -6,6 +6,7 @@ import { Category } from 'src/categories/category.model';
 import { Op } from 'sequelize';
 import { FileModel } from 'src/files/file.model';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { ORDER_STATE } from 'src/shared/enums';
 
 @Injectable()
 export class ProductService {
@@ -32,7 +33,7 @@ export class ProductService {
       price: dto.price,
       categoryId: dto.categoryId,
       imagesOrder: dto.imageIds,
-      isVisible: dto.isVisible
+      state: dto.state
     });
 
     if (dto.imageIds?.length) {
@@ -55,7 +56,7 @@ export class ProductService {
       price: dto.price,
       categoryId: dto.categoryId,
       imagesOrder: dto.imageIds,
-      isVisible: dto.isVisible
+      state: dto.state
     });
 
     if (dto.imageIds?.length) {
@@ -86,9 +87,10 @@ export class ProductService {
     search?: string,
     sort: string = 'id',
     order: string = 'ASC',
+    state?: ORDER_STATE, // Новый параметр
   ) {
     const offset = (pageNumber - 1) * limit;
-
+  
     const whereCondition: any = {};
     if (categoryId) whereCondition.categoryId = categoryId;
     if (search) {
@@ -97,11 +99,12 @@ export class ProductService {
         { description: { [Op.iLike]: `%${search}%` } },
       ];
     }
-
+    if (state) whereCondition.state = state; // Добавляем условие по state
+  
     const validSortColumns = ['id', 'title', 'price', 'createdAt', 'updatedAt'];
     if (!validSortColumns.includes(sort)) sort = 'id';
     order = order.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
-
+  
     const { rows: items, count: totalItems } =
       await this.productRepository.findAndCountAll({
         where: whereCondition,
@@ -114,7 +117,7 @@ export class ProductService {
         ],
         attributes: { exclude: ['categoryId'] },
       });
-
+  
     return {
       items,
       totalItems,
@@ -124,14 +127,14 @@ export class ProductService {
     };
   }
 
-  async updateVisibility(productId: number, isVisible: boolean): Promise<Product> {
+  async updateProductState(productId: number, state: ORDER_STATE): Promise<Product> {
     const product = await this.productRepository.findByPk(productId);
 
     if (!product) {
       throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
     }
 
-    await product.update({ isVisible });
+    await product.update({ state });
     return this.getProductById(productId);
   }
 }

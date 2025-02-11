@@ -20,6 +20,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { ORDER_STATE } from 'src/shared/enums';
 
 @ApiTags('products')
 @Controller('products')
@@ -99,23 +100,33 @@ export class ProductsController {
   @ApiQuery({ name: 'search', required: false, type: String, description: 'Search by title or description' })
   @ApiQuery({ name: 'sort', required: false, type: String, description: 'Sort key' })
   @ApiQuery({ name: 'order', required: false, type: String, enum: ['ASC', 'DESC'], description: 'Sort order' })
-  async getAllProducts(
-    @Query('page') page = 1,
-    @Query('limit') limit = 10,
-    @Query('categoryId') categoryId?: number,
-    @Query('search') search?: string,
-    @Query('sort') sort?: string,
-    @Query('order') order: 'ASC' | 'DESC' = 'ASC',
-  ) {
-    return this.productService.findAllProducts(Number(page), Number(limit), categoryId, search, sort, order);
-  }
+  @ApiQuery({ name: 'state', required: false, type: String, description: 'Filter by product state' })
+async getAllProducts(
+  @Query('page') page = 1,
+  @Query('limit') limit = 10,
+  @Query('categoryId') categoryId?: number,
+  @Query('search') search?: string,
+  @Query('sort') sort?: string,
+  @Query('order') order: 'ASC' | 'DESC' = 'ASC',
+  @Query('state') state?: ORDER_STATE, // Новый параметр
+) {
+  return this.productService.findAllProducts(
+    Number(page),
+    Number(limit),
+    categoryId,
+    search,
+    sort,
+    order,
+    state, // Передаем новый параметр
+  );
+}
 
-  @Patch(':id/visibility')
+  @Patch(':id/state')
   @ApiBody({
     description: 'Update product visibility',
-    schema: { type: 'object', properties: { isVisible: { type: 'boolean' } } },
+    schema: { type: 'object', properties: { state: { type: typeof ORDER_STATE } } },
   })
-  async updateVisibility(@Param('id') id: number, @Body('isVisible') isVisible: boolean) {
-    return this.productService.updateVisibility(id, isVisible);
+  async updateProductState(@Param('id') id: number, @Body('state') state: ORDER_STATE) {
+    return this.productService.updateProductState(id, state);
   }
 }
