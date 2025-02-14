@@ -26,7 +26,7 @@ import { CreateAdminDto } from './dto/create-admin.dto';
 
 @ApiTags('users')
 @Controller('users')
-@UseGuards(JwtAuthGuard)
+
 @ApiBearerAuth()
 export class UsersController {
   constructor(
